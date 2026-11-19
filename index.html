@@ -35,7 +35,7 @@
           <h1 class="text-xs sm:text-sm md:text-base font-bold leading-tight truncate">
             Escuela y Liceo Vocacional Sarmiento — Evaluación Docente
           </h1>
-          <!-- Selector Rápido de Período en el Encabezado -->
+          <!-- Selector Rápido de Período en el Encabezado (solo Coordinación) -->
           <select id="select-periodo-header" onchange="cambiarPeriodoDesdeHeader(this.value)"
             class="hidden bg-amber-400 text-blue-950 font-extrabold text-[11px] md:text-xs px-2 py-0.5 rounded cursor-pointer border border-amber-300 focus:outline-none">
           </select>
@@ -44,7 +44,7 @@
       </div>
     </div>
 
-    <!-- Selector de Nivel (se oculta en modo enlace individual) -->
+    <!-- Selector de Nivel (solo Coordinación) -->
     <div class="hidden items-center bg-blue-900/90 p-1 rounded-lg border border-blue-700 gap-1 overflow-x-auto max-w-full order-3 lg:order-2" id="tabs-nivel">
       <button data-nivel="" class="btn-nivel px-2 md:px-2.5 py-1 rounded text-[11px] md:text-xs font-bold bg-amber-400 text-blue-950 whitespace-nowrap">
         Todos (<span id="cnt-nivel-todos">0</span>)
@@ -61,7 +61,10 @@
     </div>
 
     <!-- Contadores y Botón Actualizar -->
-    <div class="flex items-center gap-1.5 md:gap-2 text-[11px] md:text-xs order-2 lg:order-3">
+    <div class="flex items-center gap-1.5 md:gap-2 text-[11px] md:text-xs order-2 lg:order-3 flex-wrap">
+      <span id="badge-modo-restringido" class="hidden bg-amber-400 text-blue-950 font-bold px-2.5 py-0.5 rounded-full text-[11px] max-w-[260px] sm:max-w-xs truncate">
+        Evaluación Asignada
+      </span>
       <div id="stats-generales" class="hidden items-center gap-1.5">
         <span class="bg-emerald-900/70 border border-emerald-600 text-emerald-200 px-2 py-0.5 md:px-2.5 md:py-1 rounded-full">
           Eval: <strong id="stat-evaluados">0</strong>
@@ -73,9 +76,6 @@
           Pend: <strong id="stat-pendientes">0</strong>
         </span>
       </div>
-      <span id="badge-modo-individual" class="hidden bg-amber-400 text-blue-950 font-bold px-2.5 py-0.5 rounded-full text-[11px]">
-        Evaluación Individual
-      </span>
       <button onclick="cargarDatos(true)" id="btn-actualizar"
         class="hidden bg-blue-700 hover:bg-blue-600 border border-blue-500 px-2.5 py-1 rounded text-xs font-semibold transition items-center gap-1 shrink-0"
         title="Sincronizar inscripciones">
@@ -89,7 +89,7 @@
     <div class="flex divide-x divide-slate-200 text-xs font-bold">
       <button id="mob-tab-padron" onclick="cambiarVistaMovil('padron')"
         class="flex-1 py-2.5 px-2 text-center transition border-b-2 border-blue-900 text-blue-950 bg-blue-50/60">
-        📋 Padrón (<span id="mob-cnt-padron">0</span>)
+        📋 Inscriptos (<span id="mob-cnt-padron">0</span>)
       </button>
       <button id="mob-tab-ficha" onclick="cambiarVistaMovil('ficha')"
         class="flex-1 py-2.5 px-2 text-center transition border-b-2 border-transparent text-slate-600">
@@ -102,24 +102,23 @@
     </div>
   </nav>
 
-  <!-- Pantalla de Acceso y Selección de Período -->
+  <!-- Pantalla de Acceso y Selección de Período (solo Coordinación) -->
   <div id="pantalla-login" class="hidden flex-1 flex items-center justify-center bg-slate-100 p-4">
     <div class="bg-white border border-slate-200 shadow-lg rounded-xl p-6 max-w-md w-full space-y-5">
       <div class="text-center space-y-1">
         <span class="text-[11px] font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full">
-          Acceso Departamento Concursos ELVS
+          Acceso Coordinación
         </span>
         <h2 class="text-lg font-extrabold text-slate-900">Seleccionar Período de Inscripción</h2>
         <p class="text-xs text-slate-500">
-          Elija la convocatoria que desea consultar e ingrese la clave de acceso.
+          Elija la convocatoria que desea consultar e ingrese la clave de coordinación.
         </p>
       </div>
 
-      <!-- Tarjetas de Períodos Disponibles -->
       <div id="grid-periodos-login" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
 
       <div id="bloque-clave-login" class="space-y-2">
-        <label class="text-[11px] font-bold text-slate-600 block">Contraseña</label>
+        <label class="text-[11px] font-bold text-slate-600 block">Clave de Coordinación</label>
         <input type="password" id="input-clave-coord" placeholder="Ingrese clave..."
           onkeydown="if(event.key==='Enter') validarIngresoCoord()"
           class="w-full text-sm px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" />
@@ -145,12 +144,22 @@
     <!-- COLUMNA 1: Padrón y Filtros -->
     <section id="col-padron" class="lg:col-span-3 bg-white border-r border-slate-200 flex flex-col lg:h-full lg:overflow-hidden">
       <div class="p-3 bg-slate-50 border-b border-slate-200 space-y-2 shrink-0">
-        <input type="text" id="filtro-texto" placeholder="Buscar por apellido, DNI, título o materia..."
+        <input type="text" id="filtro-texto" placeholder="Buscar por apellido, DNI, título..."
           class="w-full text-xs px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white" />
-        <select id="filtro-materia"
-          class="w-full text-xs px-2.5 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white">
-          <option value="">Todas las materias / cargos</option>
-        </select>
+
+        <!-- Bloque de Filtro por Materia y Botón de Enlace Compartible (solo Coordinación) -->
+        <div id="bloque-filtro-materia" class="space-y-1.5">
+          <select id="filtro-materia"
+            class="w-full text-xs px-2.5 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white">
+            <option value="">Todas las materias / cargos</option>
+          </select>
+
+          <button id="btn-copiar-link-materia" onclick="copiarEnlaceMateria()"
+            class="hidden w-full py-2 px-2.5 rounded-md bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
+            🔗 Copiar enlace de esta materia
+          </button>
+        </div>
+
         <div class="flex gap-1">
           <button data-estado="" class="btn-filtro-estado flex-1 text-[11px] py-1.5 rounded font-medium bg-blue-900 text-white">Todos</button>
           <button data-estado="Pendiente" class="btn-filtro-estado flex-1 text-[11px] py-1.5 rounded font-medium bg-slate-200 text-slate-700">Pend.</button>
@@ -228,8 +237,12 @@
     const urlParams = new URLSearchParams(window.location.search);
     const PARAM_PERIODO = urlParams.get('periodo') || '';
     const PARAM_P = urlParams.get('p') || '';
+    const PARAM_M = urlParams.get('m') || '';
+    const PARAM_NIVEL = urlParams.get('nivel') || 'TODOS';
     const PARAM_T = urlParams.get('t') || '';
+
     const MODO_INDIVIDUAL = Boolean(PARAM_P && PARAM_T);
+    const MODO_MATERIA = Boolean(!MODO_INDIVIDUAL && PARAM_M && PARAM_T);
 
     const NIVEL_BADGE = {
       Primario: 'bg-sky-100 text-sky-800 border-sky-300',
@@ -254,6 +267,9 @@
     function getAuthPayload() {
       if (MODO_INDIVIDUAL) {
         return { periodo: periodoSeleccionado, modo: 'individual', p: PARAM_P, t: PARAM_T };
+      }
+      if (MODO_MATERIA) {
+        return { periodo: periodoSeleccionado, modo: 'materia', m: PARAM_M, nivel: PARAM_NIVEL, t: PARAM_T };
       }
       return { periodo: periodoSeleccionado, modo: 'general', clave: claveCoordActual };
     }
@@ -292,10 +308,22 @@
     }
 
     function configurarInterfazSegunModo() {
+      const badgeRestringido = document.getElementById('badge-modo-restringido');
+
       if (MODO_INDIVIDUAL) {
         document.getElementById('barra-navegacion').classList.add('hidden');
-        document.getElementById('badge-modo-individual').classList.remove('hidden');
         document.getElementById('mob-tab-padron').classList.add('hidden');
+        badgeRestringido.textContent = 'Evaluación Individual';
+        badgeRestringido.classList.remove('hidden');
+      } else if (MODO_MATERIA) {
+        document.getElementById('bloque-filtro-materia').classList.add('hidden');
+        document.getElementById('btn-copiar-link').classList.add('hidden');
+        document.getElementById('stats-generales').classList.remove('hidden');
+        document.getElementById('stats-generales').classList.add('flex');
+        const nivTxt = PARAM_NIVEL !== 'TODOS' ? ` · ${PARAM_NIVEL}` : '';
+        badgeRestringido.textContent = `Materia: ${PARAM_M}${nivTxt}`;
+        badgeRestringido.title = `${PARAM_M}${nivTxt}`;
+        badgeRestringido.classList.remove('hidden');
       } else {
         document.getElementById('tabs-nivel').classList.remove('hidden');
         document.getElementById('tabs-nivel').classList.add('flex');
@@ -384,7 +412,7 @@
         return;
       }
 
-      if (MODO_INDIVIDUAL) {
+      if (MODO_INDIVIDUAL || MODO_MATERIA) {
         cargarDatos(false);
         return;
       }
@@ -408,7 +436,6 @@
           document.getElementById('bloque-clave-login').classList.add('hidden');
         }
 
-        // Mostrar pantalla de selección de período al ingresar (si no hay sesión activa)
         if (!claveCoordActual) {
           document.getElementById('pantalla-carga').classList.add('hidden');
           document.getElementById('pantalla-login').classList.remove('hidden');
@@ -439,6 +466,8 @@
           periodo: auth.periodo,
           modo: auth.modo,
           p: auth.p || '',
+          m: auth.m || '',
+          nivel: auth.nivel || 'TODOS',
           t: auth.t || '',
           clave: auth.clave || ''
         });
@@ -450,7 +479,7 @@
           throw new Error(json.error || 'No se pudo obtener la información.');
         }
 
-        if (!MODO_INDIVIDUAL && claveCoordActual) {
+        if (!MODO_INDIVIDUAL && !MODO_MATERIA && claveCoordActual) {
           sessionStorage.setItem('elvs_clave_coord', claveCoordActual);
         }
 
@@ -464,18 +493,23 @@
         const ahora = new Date();
         const horaTxt = ahora.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 
-        document.getElementById('subtitulo-convocatoria').textContent = MODO_INDIVIDUAL
-          ? `${nombrePeriodo} · Postulante: ${postulantes[0] ? postulantes[0].nombre : ''}`
-          : `${nombrePeriodo} · ${postulantes.length} inscripciones`;
-        document.getElementById('hora-sync').textContent = `Act. ${horaTxt}`;
-
-        const selHeader = document.getElementById('select-periodo-header');
-        if (selHeader) selHeader.value = periodoSeleccionado;
-
-        if (!MODO_INDIVIDUAL) {
+        if (MODO_INDIVIDUAL) {
+          document.getElementById('subtitulo-convocatoria').textContent =
+            `Convocatoria ${periodoSeleccionado} · Postulante: ${postulantes[0] ? postulantes[0].nombre : ''}`;
+        } else if (MODO_MATERIA) {
+          const nivLabel = PARAM_NIVEL !== 'TODOS' ? ` (${PARAM_NIVEL})` : '';
+          document.getElementById('subtitulo-convocatoria').textContent =
+            `Convocatoria ${periodoSeleccionado}${nivLabel} · ${postulantes.length} inscriptos en la materia`;
+        } else {
+          document.getElementById('subtitulo-convocatoria').textContent =
+            `${nombrePeriodo} · ${postulantes.length} inscripciones`;
+          const selHeader = document.getElementById('select-periodo-header');
+          if (selHeader) selHeader.value = periodoSeleccionado;
           actualizarContadoresNivel();
           poblarMaterias();
         }
+
+        document.getElementById('hora-sync').textContent = `Act. ${horaTxt}`;
         aplicarFiltros();
 
         document.getElementById('pantalla-carga').classList.add('hidden');
@@ -551,6 +585,60 @@
       });
     }
 
+    async function copiarEnlaceMateria() {
+      const materia = document.getElementById('filtro-materia').value;
+      if (!materia) return;
+
+      const nivel = filtroNivelActivo || 'TODOS';
+      const btn = document.getElementById('btn-copiar-link-materia');
+      btn.disabled = true;
+      btn.textContent = 'Generando enlace...';
+
+      try {
+        const query = new URLSearchParams({
+          action: 'token_materia',
+          periodo: periodoSeleccionado,
+          nivel: nivel,
+          m: materia,
+          clave: claveCoordActual
+        });
+        const resp = await fetch(`${API_URL}?${query.toString()}`);
+        const json = await resp.json();
+        if (!json.ok || !json.token) {
+          throw new Error(json.error || 'No se pudo generar el enlace');
+        }
+
+        const baseUrl = window.location.origin + window.location.pathname;
+        const enlace = `${baseUrl}?periodo=${encodeURIComponent(periodoSeleccionado)}&nivel=${encodeURIComponent(nivel)}&m=${encodeURIComponent(materia)}&t=${encodeURIComponent(json.token)}`;
+
+        copiarTextoPortapapeles(enlace, () => {
+          btn.disabled = false;
+          btn.textContent = '✓ Enlace de materia copiado';
+          btn.className = 'w-full py-2 px-2.5 rounded-md bg-blue-900 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm';
+          setTimeout(() => {
+            actualizarBotonEnlaceMateria();
+          }, 2600);
+        });
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = 'Error: ' + err.message;
+      }
+    }
+
+    function actualizarBotonEnlaceMateria() {
+      const btn = document.getElementById('btn-copiar-link-materia');
+      if (!btn || MODO_MATERIA || MODO_INDIVIDUAL) return;
+      const materia = document.getElementById('filtro-materia').value;
+      if (!materia) {
+        btn.classList.add('hidden');
+        return;
+      }
+      const nivTxt = filtroNivelActivo ? ` · ${filtroNivelActivo}` : '';
+      btn.className = 'w-full py-2 px-2.5 rounded-md bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm';
+      btn.textContent = `🔗 Copiar enlace de esta materia${nivTxt}`;
+      btn.classList.remove('hidden');
+    }
+
     function actualizarContadoresNivel() {
       document.getElementById('cnt-nivel-todos').textContent = postulantes.length;
       ['Primario', 'Secundario', 'Superior'].forEach(niv => {
@@ -590,7 +678,10 @@
         select.appendChild(opt);
       });
 
-      if (Object.keys(conteo).includes(valorPrevio)) select.value = valorPrevio;
+      if (Object.keys(conteo).includes(valorPrevio)) {
+        select.value = valorPrevio;
+      }
+      actualizarBotonEnlaceMateria();
     }
 
     function aplicarFiltros() {
@@ -601,13 +692,14 @@
       }
 
       const q = document.getElementById('filtro-texto').value.toLowerCase().trim();
-      const materia = document.getElementById('filtro-materia').value;
+      const materia = (!MODO_MATERIA) ? document.getElementById('filtro-materia').value : '';
 
-      const baseNivel = filtroNivelActivo
+      const baseNivel = (!MODO_MATERIA && filtroNivelActivo)
         ? postulantes.filter(p => p.nivel === filtroNivelActivo)
         : postulantes;
 
       actualizarEstadisticas(baseNivel);
+      actualizarBotonEnlaceMateria();
 
       filtrados = baseNivel.filter(p => {
         const matchTexto = !q ||
@@ -734,7 +826,7 @@
         btn.textContent = `✓ Guardado en planilla ${p.nivel} (${p.periodo})`;
         btn.className = 'w-full py-2.5 rounded font-bold text-xs bg-emerald-600 text-white transition';
         if (!MODO_INDIVIDUAL) {
-          const baseNivel = filtroNivelActivo
+          const baseNivel = (!MODO_MATERIA && filtroNivelActivo)
             ? postulantes.filter(item => item.nivel === filtroNivelActivo)
             : postulantes;
           actualizarEstadisticas(baseNivel);
@@ -762,7 +854,7 @@
         p ? `${posIdx + 1}/${filtrados.length}` : '-';
 
       if (!p) {
-        cont.innerHTML = '<div class="p-6 text-center text-xs text-slate-400">No hay registros disponibles en este período.</div>';
+        cont.innerHTML = '<div class="p-6 text-center text-xs text-slate-400">No hay registros disponibles.</div>';
         renderVisor(null);
         return;
       }
@@ -773,9 +865,14 @@
       const mobDocs = document.getElementById('mob-cnt-docs');
       if (mobDocs) mobDocs.textContent = `${docsCargados}/${docsList.length}`;
 
-      const tagsMaterias = p.materias.map(m =>
-        `<span class="inline-block bg-blue-100 text-blue-950 border border-blue-200 text-xs font-medium px-2 py-1 rounded-md">${m}</span>`
-      ).join('');
+      const tagsMaterias = p.materias.map(m => {
+        const esAsignada = MODO_MATERIA && m === PARAM_M;
+        return `<span class="inline-block text-xs font-medium px-2 py-1 rounded-md border ${
+          esAsignada
+            ? 'bg-amber-100 text-amber-950 border-amber-400 font-bold'
+            : 'bg-blue-100 text-blue-950 border-blue-200'
+        }">${m}</span>`;
+      }).join('');
 
       cont.innerHTML = `
         <div class="border-b border-slate-200 pb-3">
