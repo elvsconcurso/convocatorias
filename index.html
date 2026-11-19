@@ -18,6 +18,863 @@
     }
   </style>
 </head>
+<body class="bg-slate-100 text-slate-800 min-h-screen lg:h-screen flex flex-col lg:overflow-hidden font-sans">
+
+  <!-- Barra Superior Institucional -->
+  <header class="bg-blue-950 text-white px-3 md:px-4 py-2 shadow-md flex flex-wrap items-center justify-between gap-2 md:gap-3 shrink-0">
+    <div class="flex items-center gap-2.5 min-w-0">
+      <img id="img-escudo" src="./escudo.png" alt="Escudo Escuela Sarmiento"
+           onload="this.classList.remove('hidden'); document.getElementById('badge-unt').classList.add('hidden');"
+           onerror="cargarEscudoDesdeApi(this)"
+           class="hidden h-9 w-9 md:h-11 md:w-11 object-contain bg-white rounded-lg p-1 shadow-sm shrink-0" />
+      <div id="badge-unt" class="bg-amber-400 text-blue-950 font-extrabold px-2 py-1 rounded text-xs md:text-sm shrink-0">
+        UNT
+      </div>
+      <div class="min-w-0">
+        <h1 class="text-xs sm:text-sm md:text-base font-bold leading-tight truncate">
+          Escuela y Liceo Vocacional Sarmiento — Evaluación 2026
+        </h1>
+        <p class="text-[11px] md:text-xs text-blue-200 truncate" id="subtitulo-convocatoria">Iniciando sistema...</p>
+      </div>
+    </div>
+
+    <!-- Selector de Nivel (se oculta en modo enlace individual) -->
+    <div class="hidden items-center bg-blue-900/90 p-1 rounded-lg border border-blue-700 gap-1 overflow-x-auto max-w-full order-3 lg:order-2" id="tabs-nivel">
+      <button data-nivel="" class="btn-nivel px-2 md:px-2.5 py-1 rounded text-[11px] md:text-xs font-bold bg-amber-400 text-blue-950 whitespace-nowrap">
+        Todos (<span id="cnt-nivel-todos">0</span>)
+      </button>
+      <button data-nivel="Primario" class="btn-nivel px-2 md:px-2.5 py-1 rounded text-[11px] md:text-xs font-medium text-blue-100 hover:bg-blue-800 whitespace-nowrap">
+        Primario (<span id="cnt-nivel-Primario">0</span>)
+      </button>
+      <button data-nivel="Secundario" class="btn-nivel px-2 md:px-2.5 py-1 rounded text-[11px] md:text-xs font-medium text-blue-100 hover:bg-blue-800 whitespace-nowrap">
+        Secundario (<span id="cnt-nivel-Secundario">0</span>)
+      </button>
+      <button data-nivel="Superior" class="btn-nivel px-2 md:px-2.5 py-1 rounded text-[11px] md:text-xs font-medium text-blue-100 hover:bg-blue-800 whitespace-nowrap">
+        Superior (<span id="cnt-nivel-Superior">0</span>)
+      </button>
+    </div>
+
+    <!-- Contadores y Botón Actualizar -->
+    <div class="flex items-center gap-1.5 md:gap-2 text-[11px] md:text-xs order-2 lg:order-3">
+      <div id="stats-generales" class="hidden items-center gap-1.5">
+        <span class="bg-emerald-900/70 border border-emerald-600 text-emerald-200 px-2 py-0.5 md:px-2.5 md:py-1 rounded-full">
+          Eval: <strong id="stat-evaluados">0</strong>
+        </span>
+        <span class="bg-amber-900/70 border border-amber-500 text-amber-200 px-2 py-0.5 md:px-2.5 md:py-1 rounded-full">
+          Obs: <strong id="stat-observados">0</strong>
+        </span>
+        <span class="hidden sm:inline-block bg-slate-800 border border-slate-600 text-slate-200 px-2.5 py-1 rounded-full">
+          Pend: <strong id="stat-pendientes">0</strong>
+        </span>
+      </div>
+      <span id="badge-modo-individual" class="hidden bg-amber-400 text-blue-950 font-bold px-2.5 py-0.5 rounded-full text-[11px]">
+        Evaluación Individual
+      </span>
+      <button onclick="cargarDatos(true)" id="btn-actualizar"
+        class="hidden bg-blue-700 hover:bg-blue-600 border border-blue-500 px-2.5 py-1 rounded text-xs font-semibold transition items-center gap-1 shrink-0"
+        title="Sincronizar nuevas inscripciones">
+        ↻ <span class="hidden sm:inline">Actualizar</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Barra de Navegación para Celular y Tablet (< 1024px) -->
+  <nav id="nav-movil" class="hidden lg:hidden bg-white border-b border-slate-300 sticky top-0 z-30 shadow-sm shrink-0">
+    <div class="flex divide-x divide-slate-200 text-xs font-bold">
+      <button id="mob-tab-padron" onclick="cambiarVistaMovil('padron')"
+        class="flex-1 py-2.5 px-2 text-center transition border-b-2 border-blue-900 text-blue-950 bg-blue-50/60">
+        📋 Padrón (<span id="mob-cnt-padron">0</span>)
+      </button>
+      <button id="mob-tab-ficha" onclick="cambiarVistaMovil('ficha')"
+        class="flex-1 py-2.5 px-2 text-center transition border-b-2 border-transparent text-slate-600">
+        👤 Ficha y Dictamen
+      </button>
+      <button id="mob-tab-visor" onclick="cambiarVistaMovil('visor')"
+        class="flex-1 py-2.5 px-2 text-center transition border-b-2 border-transparent text-slate-600">
+        📄 Documentos (<span id="mob-cnt-docs">0</span>)
+      </button>
+    </div>
+  </nav>
+
+  <!-- Pantalla de Acceso de Coordinación -->
+  <div id="pantalla-login" class="hidden flex-1 flex items-center justify-center bg-slate-100 p-4">
+    <div class="bg-white border border-slate-200 shadow-lg rounded-xl p-6 max-w-sm w-full space-y-4">
+      <div class="text-center space-y-1">
+        <span class="text-[11px] font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full">
+          Acceso Restringido
+        </span>
+        <h2 class="text-base font-extrabold text-slate-900">Padrón General de Inscriptos</h2>
+        <p class="text-xs text-slate-500">
+          Ingrese la clave de coordinación para ver el listado completo y generar enlaces individuales.
+        </p>
+      </div>
+      <div class="space-y-2">
+        <input type="password" id="input-clave-coord" placeholder="Clave de coordinación..."
+          onkeydown="if(event.key==='Enter') validarClaveCoord()"
+          class="w-full text-sm px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" />
+        <p id="msg-error-clave" class="hidden text-xs text-red-600 font-medium">Clave incorrecta. Intente nuevamente.</p>
+        <button onclick="validarClaveCoord()"
+          class="w-full py-2.5 bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs rounded-lg transition">
+          Ingresar al Padrón General
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pantalla de Carga -->
+  <div id="pantalla-carga" class="flex-1 flex flex-col items-center justify-center bg-slate-100 gap-3 p-6">
+    <div class="w-10 h-10 border-4 border-blue-900 border-t-transparent rounded-full animate-spin"></div>
+    <p class="text-sm font-semibold text-slate-700 text-center">Conectando con las planillas 2026...</p>
+  </div>
+
+  <!-- Cuerpo Principal Responsive -->
+  <main id="app-principal" class="hidden flex-1 grid grid-cols-1 lg:grid-cols-12 lg:overflow-hidden">
+
+    <!-- COLUMNA 1: Padrón y Filtros -->
+    <section id="col-padron" class="lg:col-span-3 bg-white border-r border-slate-200 flex flex-col lg:h-full lg:overflow-hidden">
+      <div class="p-3 bg-slate-50 border-b border-slate-200 space-y-2 shrink-0">
+        <input type="text" id="filtro-texto" placeholder="Buscar por apellido, DNI, título o materia..."
+          class="w-full text-xs px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white" />
+        <select id="filtro-materia"
+          class="w-full text-xs px-2.5 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white">
+          <option value="">Todas las materias / cargos</option>
+        </select>
+        <div class="flex gap-1">
+          <button data-estado="" class="btn-filtro-estado flex-1 text-[11px] py-1.5 rounded font-medium bg-blue-900 text-white">Todos</button>
+          <button data-estado="Pendiente" class="btn-filtro-estado flex-1 text-[11px] py-1.5 rounded font-medium bg-slate-200 text-slate-700">Pend.</button>
+          <button data-estado="Evaluado" class="btn-filtro-estado flex-1 text-[11px] py-1.5 rounded font-medium bg-slate-200 text-slate-700">Eval.</button>
+          <button data-estado="Observado" class="btn-filtro-estado flex-1 text-[11px] py-1.5 rounded font-medium bg-slate-200 text-slate-700">Obs.</button>
+        </div>
+      </div>
+
+      <div class="px-3 py-1.5 bg-slate-100 border-b border-slate-200 text-[11px] text-slate-500 flex justify-between shrink-0">
+        <span id="contador-filtrados">Mostrando 0 postulantes</span>
+        <span id="hora-sync" class="text-slate-400"></span>
+      </div>
+
+      <div id="lista-postulantes" class="flex-1 overflow-y-auto divide-y divide-slate-100"></div>
+    </section>
+
+    <!-- COLUMNA 2: Ficha del Docente y Evaluación -->
+    <section id="col-ficha" class="lg:col-span-4 bg-white border-r border-slate-200 flex flex-col lg:h-full lg:overflow-hidden">
+      <div id="barra-navegacion" class="px-3 py-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-2 shrink-0">
+        <div class="flex items-center gap-1.5">
+          <button onclick="cambiarVistaMovil('padron')"
+            class="lg:hidden text-xs bg-slate-200 hover:bg-slate-300 px-2 py-1 rounded font-semibold text-slate-700">
+            ☰ Lista
+          </button>
+          <button onclick="navegarPostulante(-1)"
+            class="text-xs bg-white hover:bg-slate-100 border border-slate-300 px-2 py-1 rounded font-medium text-slate-700">
+            ← Ant.
+          </button>
+          <span id="indicador-posicion" class="text-[11px] font-semibold text-slate-600">-</span>
+          <button onclick="navegarPostulante(1)"
+            class="text-xs bg-white hover:bg-slate-100 border border-slate-300 px-2 py-1 rounded font-medium text-slate-700">
+            Sig. →
+          </button>
+        </div>
+        <button id="btn-copiar-link" onclick="copiarEnlaceIndividual(seleccionadoId)"
+          class="text-[11px] bg-blue-900 hover:bg-blue-800 text-white px-2.5 py-1 rounded font-semibold transition shrink-0">
+          🔗 Copiar enlace individual
+        </button>
+      </div>
+
+      <div id="detalle-postulante" class="flex-1 lg:overflow-y-auto p-3.5 md:p-4 space-y-3.5"></div>
+    </section>
+
+    <!-- COLUMNA 3: Visor PDF de Documentación Probatoria -->
+    <section id="panel-visor" class="lg:col-span-5 bg-slate-800 flex flex-col min-h-[calc(100vh-96px)] lg:min-h-0 lg:h-full lg:overflow-hidden">
+      <div class="bg-slate-900 px-2 pt-2 border-b border-slate-700 flex flex-wrap items-center justify-between gap-1 shrink-0">
+        <div id="tabs-documentos" class="flex flex-wrap gap-1"></div>
+        <div class="flex items-center gap-1.5 pb-1.5">
+          <a id="btn-abrir-externo" href="#" target="_blank" rel="noopener"
+             class="text-[11px] bg-slate-700 hover:bg-slate-600 text-white px-2.5 py-1 rounded transition">
+            Abrir pestaña ↗
+          </a>
+          <button onclick="toggleFullscreenVisor()"
+                  class="hidden lg:inline-block text-[11px] bg-blue-700 hover:bg-blue-600 text-white px-2.5 py-1 rounded transition">
+            ⛶ Ampliar
+          </button>
+        </div>
+      </div>
+
+      <div class="flex-1 relative bg-slate-700 flex items-center justify-center min-h-[70vh] lg:min-h-0">
+        <div id="visor-mensaje" class="text-center text-slate-300 p-6 max-w-sm hidden">
+          <p class="text-sm font-semibold mb-1">Documento no adjuntado</p>
+          <p class="text-xs text-slate-400">El postulante no subió archivo en esta sección.</p>
+        </div>
+        <iframe id="iframe-visor" class="w-full h-full min-h-[70vh] lg:min-h-0 border-0 bg-white" allow="autoplay"></iframe>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // PEGUE AQUÍ LA URL DE SU APLICACIÓN WEB DE GOOGLE APPS SCRIPT (terminada en /exec, sin /u/1/)
+    const API_URL = 'https://script.google.com/macros/s/AKfycbz60vq4DQO0qsrQ2A_gk_Ql1pGhHB0v-8juO_Tq6s_Xb_ZAyecy_UBFFZZOu9hzjEbGKw/exec';
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const PARAM_P = urlParams.get('p') || '';
+    const PARAM_T = urlParams.get('t') || '';
+    const MODO_INDIVIDUAL = Boolean(PARAM_P && PARAM_T);
+
+    const DOC_TABS = [
+      { key: 'cv', label: 'CV' },
+      { key: 'anexoTitulos', label: 'Anexo Títulos' },
+      { key: 'anexoAntec', label: 'Antecedentes' },
+      { key: 'formacionA', label: 'Formación A' },
+      { key: 'formacionB', label: 'Formación B' },
+      { key: 'extension', label: 'Extensión y Gestión' }
+    ];
+
+    const NIVEL_BADGE = {
+      Primario: 'bg-sky-100 text-sky-800 border-sky-300',
+      Secundario: 'bg-indigo-100 text-indigo-800 border-indigo-300',
+      Superior: 'bg-purple-100 text-purple-800 border-purple-300'
+    };
+
+    let postulantes = [];
+    let filtrados = [];
+    let seleccionadoId = null;
+    let docActivo = 'cv';
+    let filtroNivelActivo = '';
+    let filtroEstadoActivo = '';
+    let claveCoordActual = sessionStorage.getItem('elvs_clave_coord') || '';
+    let escudoIntentado = false;
+    let vistaMovilActiva = MODO_INDIVIDUAL ? 'ficha' : 'padron';
+
+    function getAuthPayload() {
+      if (MODO_INDIVIDUAL) {
+        return { modo: 'individual', p: PARAM_P, t: PARAM_T };
+      }
+      return { modo: 'general', clave: claveCoordActual };
+    }
+
+    function cambiarVistaMovil(vista) {
+      vistaMovilActiva = vista;
+
+      const tabs = ['padron', 'ficha', 'visor'];
+      tabs.forEach(t => {
+        const btn = document.getElementById('mob-tab-' + t);
+        if (!btn) return;
+        if (t === vista) {
+          btn.className = 'flex-1 py-2.5 px-2 text-center transition border-b-2 border-blue-900 text-blue-950 bg-blue-50/70';
+        } else {
+          btn.className = 'flex-1 py-2.5 px-2 text-center transition border-b-2 border-transparent text-slate-600 hover:bg-slate-50';
+        }
+      });
+
+      const colPadron = document.getElementById('col-padron');
+      const colFicha = document.getElementById('col-ficha');
+      const panelVisor = document.getElementById('panel-visor');
+
+      if (MODO_INDIVIDUAL) {
+        colPadron.className = 'hidden';
+        colFicha.className = `${vista === 'ficha' ? 'flex' : 'hidden'} lg:flex lg:col-span-5 bg-white border-r border-slate-200 flex-col lg:h-full lg:overflow-hidden`;
+        panelVisor.className = `${vista === 'visor' ? 'flex' : 'hidden'} lg:flex lg:col-span-7 bg-slate-800 flex-col min-h-[calc(100vh-96px)] lg:min-h-0 lg:h-full lg:overflow-hidden`;
+      } else {
+        colPadron.className = `${vista === 'padron' ? 'flex' : 'hidden'} lg:flex lg:col-span-3 bg-white border-r border-slate-200 flex-col lg:h-full lg:overflow-hidden`;
+        colFicha.className = `${vista === 'ficha' ? 'flex' : 'hidden'} lg:flex lg:col-span-4 bg-white border-r border-slate-200 flex-col lg:h-full lg:overflow-hidden`;
+        panelVisor.className = `${vista === 'visor' ? 'flex' : 'hidden'} lg:flex lg:col-span-5 bg-slate-800 flex-col min-h-[calc(100vh-96px)] lg:min-h-0 lg:h-full lg:overflow-hidden`;
+      }
+
+      if (window.innerWidth < 1024) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    function configurarInterfazSegunModo() {
+      if (MODO_INDIVIDUAL) {
+        document.getElementById('barra-navegacion').classList.add('hidden');
+        document.getElementById('badge-modo-individual').classList.remove('hidden');
+        document.getElementById('mob-tab-padron').classList.add('hidden');
+      } else {
+        document.getElementById('tabs-nivel').classList.remove('hidden');
+        document.getElementById('tabs-nivel').classList.add('flex');
+        document.getElementById('stats-generales').classList.remove('hidden');
+        document.getElementById('stats-generales').classList.add('flex');
+      }
+      cambiarVistaMovil(vistaMovilActiva);
+    }
+
+    async function cargarEscudoDesdeApi(imgEl) {
+      if (escudoIntentado || API_URL.startsWith('PEGAR_AQUI')) return;
+      escudoIntentado = true;
+      try {
+        const resp = await fetch(`${API_URL}?action=escudo`);
+        const json = await resp.json();
+        if (json && json.ok && json.dataUrl) {
+          imgEl.src = json.dataUrl;
+          imgEl.classList.remove('hidden');
+          const badge = document.getElementById('badge-unt');
+          if (badge) badge.classList.add('hidden');
+        }
+      } catch (e) {}
+    }
+
+    function validarClaveCoord() {
+      const inp = document.getElementById('input-clave-coord');
+      claveCoordActual = inp.value.trim();
+      if (!claveCoordActual) return;
+      document.getElementById('msg-error-clave').classList.add('hidden');
+      document.getElementById('pantalla-login').classList.add('hidden');
+      cargarDatos(false);
+    }
+
+    async function inicializar() {
+      configurarInterfazSegunModo();
+
+      if (API_URL.startsWith('PEGAR_AQUI')) {
+        document.getElementById('pantalla-carga').innerHTML =
+          '<p class="text-red-600 text-sm font-bold">Falta configurar API_URL en index.html</p>';
+        return;
+      }
+
+      if (MODO_INDIVIDUAL) {
+        cargarDatos(false);
+        return;
+      }
+
+      try {
+        const resp = await fetch(`${API_URL}?action=config`);
+        const cfg = await resp.json();
+        if (cfg && cfg.requiereClave && !claveCoordActual) {
+          document.getElementById('pantalla-carga').classList.add('hidden');
+          document.getElementById('pantalla-login').classList.remove('hidden');
+          document.getElementById('subtitulo-convocatoria').textContent = 'Acceso de Coordinación';
+          return;
+        }
+      } catch (e) {}
+
+      cargarDatos(false);
+    }
+
+    async function cargarDatos(esManual) {
+      const btnAct = document.getElementById('btn-actualizar');
+      if (esManual && btnAct) {
+        btnAct.disabled = true;
+        btnAct.innerHTML = '↻ <span class="hidden sm:inline">Sincronizando...</span>';
+      } else {
+        document.getElementById('pantalla-carga').classList.remove('hidden');
+        document.getElementById('app-principal').classList.add('hidden');
+        document.getElementById('nav-movil').classList.add('hidden');
+      }
+
+      try {
+        const auth = getAuthPayload();
+        const query = new URLSearchParams({
+          action: 'postulantes',
+          modo: auth.modo,
+          p: auth.p || '',
+          t: auth.t || '',
+          clave: auth.clave || ''
+        });
+
+        const resp = await fetch(`${API_URL}?${query.toString()}`);
+        const json = await resp.json();
+
+        if (!json.ok) {
+          throw new Error(json.error || 'No se pudo obtener la información.');
+        }
+
+        if (!MODO_INDIVIDUAL && claveCoordActual) {
+          sessionStorage.setItem('elvs_clave_coord', claveCoordActual);
+        }
+
+        postulantes = json.data || [];
+        if (postulantes.length > 0 && !postulantes.some(p => p.id === seleccionadoId)) {
+          seleccionadoId = postulantes[0].id;
+        }
+
+        const ahora = new Date();
+        const horaTxt = ahora.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+        document.getElementById('subtitulo-convocatoria').textContent = MODO_INDIVIDUAL
+          ? `Postulante asignado: ${postulantes[0] ? postulantes[0].nombre : ''}`
+          : `Convocatoria Activa 2026 · ${postulantes.length} inscripciones`;
+        document.getElementById('hora-sync').textContent = `Act. ${horaTxt}`;
+
+        if (!MODO_INDIVIDUAL) {
+          actualizarContadoresNivel();
+          poblarMaterias();
+        }
+        aplicarFiltros();
+
+        document.getElementById('pantalla-carga').classList.add('hidden');
+        document.getElementById('app-principal').classList.remove('hidden');
+        document.getElementById('nav-movil').classList.remove('hidden');
+        cambiarVistaMovil(vistaMovilActiva);
+      } catch (err) {
+        const msg = String(err.message || '');
+        if (msg.includes('CLAVE_INVALIDA')) {
+          sessionStorage.removeItem('elvs_clave_coord');
+          claveCoordActual = '';
+          document.getElementById('pantalla-carga').classList.add('hidden');
+          document.getElementById('pantalla-login').classList.remove('hidden');
+          document.getElementById('msg-error-clave').classList.remove('hidden');
+          return;
+        }
+        document.getElementById('pantalla-carga').innerHTML =
+          `<div class="text-center p-6 max-w-md bg-white rounded-xl border border-red-200 shadow-sm">
+            <p class="text-red-600 text-sm font-bold mb-1">Acceso no disponible</p>
+            <p class="text-xs text-slate-600">${msg}</p>
+          </div>`;
+      } finally {
+        if (btnAct) {
+          btnAct.classList.remove('hidden');
+          btnAct.classList.add('flex');
+          btnAct.disabled = false;
+          btnAct.innerHTML = '↻ <span class="hidden sm:inline">Actualizar</span>';
+        }
+      }
+    }
+
+    function copiarTextoPortapapeles(texto, onOk) {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(texto).then(onOk).catch(() => fallbackCopiar(texto, onOk));
+      } else {
+        fallbackCopiar(texto, onOk);
+      }
+    }
+
+    function fallbackCopiar(texto, onOk) {
+      const ta = document.createElement('textarea');
+      ta.value = texto;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        onOk();
+      } catch (e) {}
+      document.body.removeChild(ta);
+    }
+
+    function copiarEnlaceIndividual(id) {
+      const p = postulantes.find(item => item.id === id);
+      if (!p || !p.tokenIndividual) return;
+
+      const baseUrl = window.location.origin + window.location.pathname;
+      const enlace = `${baseUrl}?p=${encodeURIComponent(p.nivel + '-' + p.rowNumber)}&t=${encodeURIComponent(p.tokenIndividual)}`;
+
+      copiarTextoPortapapeles(enlace, () => {
+        const btn = document.getElementById('btn-copiar-link');
+        if (btn) {
+          btn.textContent = '✓ Enlace copiado';
+          btn.className = 'text-[11px] bg-emerald-600 text-white px-2.5 py-1 rounded font-semibold transition shrink-0';
+          setTimeout(() => {
+            if (document.getElementById('btn-copiar-link')) {
+              btn.textContent = '🔗 Copiar enlace individual';
+              btn.className = 'text-[11px] bg-blue-900 hover:bg-blue-800 text-white px-2.5 py-1 rounded font-semibold transition shrink-0';
+            }
+          }, 2500);
+        }
+      });
+    }
+
+    function actualizarContadoresNivel() {
+      document.getElementById('cnt-nivel-todos').textContent = postulantes.length;
+      ['Primario', 'Secundario', 'Superior'].forEach(niv => {
+        const el = document.getElementById('cnt-nivel-' + niv);
+        if (el) el.textContent = postulantes.filter(p => p.nivel === niv).length;
+      });
+    }
+
+    function actualizarEstadisticas(listaBase) {
+      let evalCount = 0, obsCount = 0, pendCount = 0;
+      listaBase.forEach(p => {
+        const est = p.evaluacion.estado;
+        if (est === 'Evaluado') evalCount++;
+        else if (est === 'Observado') obsCount++;
+        else pendCount++;
+      });
+      document.getElementById('stat-evaluados').textContent = evalCount;
+      document.getElementById('stat-observados').textContent = obsCount;
+      document.getElementById('stat-pendientes').textContent = pendCount;
+    }
+
+    function poblarMaterias() {
+      const select = document.getElementById('filtro-materia');
+      const valorPrevio = select.value;
+      const baseNivel = filtroNivelActivo
+        ? postulantes.filter(p => p.nivel === filtroNivelActivo)
+        : postulantes;
+
+      const conteo = {};
+      baseNivel.forEach(p => p.materias.forEach(m => { conteo[m] = (conteo[m] || 0) + 1; }));
+
+      select.innerHTML = `<option value="">Todas las materias / cargos (${baseNivel.length})</option>`;
+      Object.keys(conteo).sort().forEach(mat => {
+        const opt = document.createElement('option');
+        opt.value = mat;
+        opt.textContent = `${mat} (${conteo[mat]})`;
+        select.appendChild(opt);
+      });
+
+      if (Object.keys(conteo).includes(valorPrevio)) select.value = valorPrevio;
+    }
+
+    function aplicarFiltros() {
+      if (MODO_INDIVIDUAL) {
+        filtrados = postulantes;
+        renderDetalle();
+        return;
+      }
+
+      const q = document.getElementById('filtro-texto').value.toLowerCase().trim();
+      const materia = document.getElementById('filtro-materia').value;
+
+      const baseNivel = filtroNivelActivo
+        ? postulantes.filter(p => p.nivel === filtroNivelActivo)
+        : postulantes;
+
+      actualizarEstadisticas(baseNivel);
+
+      filtrados = baseNivel.filter(p => {
+        const matchTexto = !q ||
+          p.nombre.toLowerCase().includes(q) ||
+          p.dni.includes(q) ||
+          p.titulo.toLowerCase().includes(q) ||
+          p.materiasRaw.toLowerCase().includes(q);
+        const matchMateria = !materia || p.materias.includes(materia);
+        const matchEstado = !filtroEstadoActivo || p.evaluacion.estado === filtroEstadoActivo;
+        return matchTexto && matchMateria && matchEstado;
+      });
+
+      document.getElementById('contador-filtrados').textContent =
+        `Mostrando ${filtrados.length} de ${baseNivel.length}`;
+      const mobPadron = document.getElementById('mob-cnt-padron');
+      if (mobPadron) mobPadron.textContent = filtrados.length;
+
+      if (filtrados.length > 0 && !filtrados.some(p => p.id === seleccionadoId)) {
+        seleccionadoId = filtrados[0].id;
+      }
+      renderLista();
+      renderDetalle();
+    }
+
+    function renderLista() {
+      const cont = document.getElementById('lista-postulantes');
+      if (filtrados.length === 0) {
+        cont.innerHTML = '<div class="p-6 text-center text-xs text-slate-400">No hay postulantes con los filtros seleccionados.</div>';
+        return;
+      }
+
+      cont.innerHTML = filtrados.map(p => {
+        const activo = p.id === seleccionadoId;
+        const est = p.evaluacion.estado;
+        const badgeEstado = est === 'Evaluado'
+          ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+          : est === 'Observado'
+          ? 'bg-amber-100 text-amber-800 border-amber-300'
+          : 'bg-slate-100 text-slate-600 border-slate-300';
+
+        const docsCargados = DOC_TABS.filter(t => p.docs[t.key]).length;
+
+        return `
+          <button onclick="seleccionarPostulante(${p.id})"
+            class="w-full text-left px-3 py-3 lg:py-2.5 transition flex flex-col gap-1 ${activo ? 'bg-blue-50 border-l-4 border-l-blue-700' : 'hover:bg-slate-50'}">
+            <div class="flex items-start justify-between gap-1.5">
+              <span class="text-xs font-bold text-slate-800 leading-snug">
+                <span class="text-slate-400 font-normal">#${p.ordenNivel}</span> ${p.nombre}
+              </span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded border font-medium shrink-0 ${badgeEstado}">${est}</span>
+            </div>
+            <div class="flex items-center justify-between text-[11px] text-slate-500">
+              <div class="flex items-center gap-1.5">
+                <span class="text-[10px] px-1.5 py-0.2 rounded border font-semibold ${NIVEL_BADGE[p.nivel] || ''}">${p.nivel}</span>
+                <span>DNI: <strong class="text-slate-700">${p.dni}</strong></span>
+              </div>
+              <span>${docsCargados}/6 docs</span>
+            </div>
+            <div class="text-[11px] text-blue-800 font-medium truncate" title="${p.materiasRaw}">
+              ${p.materiasRaw}
+            </div>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function seleccionarPostulante(id) {
+      seleccionadoId = id;
+      renderLista();
+      renderDetalle();
+      if (window.innerWidth < 1024) {
+        cambiarVistaMovil('ficha');
+      }
+    }
+
+    function navegarPostulante(delta) {
+      if (filtrados.length === 0) return;
+      const idx = filtrados.findIndex(p => p.id === seleccionadoId);
+      const nuevoIdx = (idx + delta + filtrados.length) % filtrados.length;
+      seleccionadoId = filtrados[nuevoIdx].id;
+      renderLista();
+      renderDetalle();
+    }
+
+    function setEstadoLocal(id, nuevoEstado) {
+      const p = postulantes.find(item => item.id === id);
+      if (p) {
+        const obsActual = document.getElementById('inp-obs');
+        if (obsActual) p.evaluacion.obs = obsActual.value;
+        p.evaluacion.estado = nuevoEstado;
+        renderDetalle();
+      }
+    }
+
+    async function guardarEnPlanilla(id) {
+      const p = postulantes.find(item => item.id === id);
+      if (!p) return;
+
+      p.evaluacion.obs = document.getElementById('inp-obs').value;
+
+      const btn = document.getElementById('btn-guardar-eval');
+      btn.disabled = true;
+      btn.textContent = 'Guardando en Google Sheets...';
+
+      try {
+        const resp = await fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'guardar',
+            sheetId: p.sheetId,
+            rowNumber: p.rowNumber,
+            evalData: {
+              estado: p.evaluacion.estado,
+              obs: p.evaluacion.obs
+            },
+            auth: getAuthPayload()
+          })
+        });
+        const json = await resp.json();
+        if (!json.ok) throw new Error(json.error || 'Error al guardar');
+
+        btn.disabled = false;
+        btn.textContent = `✓ Guardado en planilla ${p.nivel}`;
+        btn.className = 'w-full py-2.5 rounded font-bold text-xs bg-emerald-600 text-white transition';
+        if (!MODO_INDIVIDUAL) {
+          const baseNivel = filtroNivelActivo
+            ? postulantes.filter(item => item.nivel === filtroNivelActivo)
+            : postulantes;
+          actualizarEstadisticas(baseNivel);
+          renderLista();
+        }
+        setTimeout(() => {
+          if (document.getElementById('btn-guardar-eval')) {
+            btn.textContent = 'Guardar Evaluación en Planilla';
+            btn.className = 'w-full py-2.5 rounded font-bold text-xs bg-blue-900 hover:bg-blue-800 text-white transition';
+          }
+        }, 2200);
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = 'Error: ' + err.message;
+        btn.className = 'w-full py-2.5 rounded font-bold text-xs bg-red-600 text-white';
+      }
+    }
+
+    function renderDetalle() {
+      const p = postulantes.find(item => item.id === seleccionadoId);
+      const cont = document.getElementById('detalle-postulante');
+      const posIdx = filtrados.findIndex(item => item.id === seleccionadoId);
+
+      document.getElementById('indicador-posicion').textContent =
+        p ? `${posIdx + 1}/${filtrados.length}` : '-';
+
+      if (!p) {
+        cont.innerHTML = '';
+        return;
+      }
+
+      const ev = p.evaluacion;
+      const docsCargados = DOC_TABS.filter(t => p.docs[t.key]).length;
+      const mobDocs = document.getElementById('mob-cnt-docs');
+      if (mobDocs) mobDocs.textContent = `${docsCargados}/6`;
+
+      const tagsMaterias = p.materias.map(m =>
+        `<span class="inline-block bg-blue-100 text-blue-950 border border-blue-200 text-xs font-medium px-2 py-1 rounded-md">${m}</span>`
+      ).join('');
+
+      cont.innerHTML = `
+        <div class="border-b border-slate-200 pb-3">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-[11px] font-bold px-2 py-0.5 rounded border ${NIVEL_BADGE[p.nivel] || ''}">
+              Nivel ${p.nivel} · #${p.ordenNivel}
+            </span>
+            <span class="text-[11px] text-slate-400">Inscripto: ${p.timestamp}</span>
+          </div>
+          <h2 class="text-base md:text-lg font-extrabold text-slate-900 leading-tight mt-1.5">${p.nombre}</h2>
+        </div>
+
+        <div class="bg-amber-50/80 rounded-lg p-3 border border-amber-200 space-y-1">
+          <h3 class="text-[11px] font-bold uppercase tracking-wider text-amber-900">Título Habilitante Declarado</h3>
+          <p class="text-xs font-bold text-slate-900 leading-relaxed">${p.titulo}</p>
+        </div>
+
+        <div class="bg-slate-50 rounded-lg p-3 border border-slate-200 space-y-2">
+          <div class="flex items-center justify-between gap-2 flex-wrap">
+            <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-600">Materias / Cargos Inscriptos</h3>
+            <span class="text-[11px] font-semibold bg-white px-2 py-0.5 rounded border border-slate-200 text-slate-700">
+              Cant. declarada: ${p.cantAsignaturas || p.materias.length}
+            </span>
+          </div>
+          <div class="flex flex-wrap gap-1.5 pt-0.5">
+            ${tagsMaterias}
+          </div>
+        </div>
+
+        <!-- Acceso rápido a documentos en Celular/Tablet -->
+        <button onclick="cambiarVistaMovil('visor')"
+          class="lg:hidden w-full py-2.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold flex items-center justify-between shadow-sm">
+          <span>📄 Ver documentación probatoria adjunta</span>
+          <span class="bg-emerald-500 text-slate-950 px-2 py-0.5 rounded-full text-[11px]">${docsCargados}/6 archivos →</span>
+        </button>
+
+        <div class="bg-slate-50 rounded-lg p-3 border border-slate-200 space-y-2">
+          <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Datos Personales del Docente</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            <div><span class="text-slate-400 block text-[11px]">D.N.I.</span><span class="font-bold">${p.dni}</span></div>
+            <div><span class="text-slate-400 block text-[11px]">Edad</span><span class="font-semibold">${p.edad} años</span></div>
+            <div class="sm:col-span-2"><span class="text-slate-400 block text-[11px]">Domicilio</span><span class="font-medium">${p.domicilio}</span></div>
+            <div><span class="text-slate-400 block text-[11px]">Teléfono</span><span class="font-medium text-blue-700">${p.telefono}</span></div>
+            <div class="truncate"><span class="text-slate-400 block text-[11px]">Correo</span><span class="font-medium text-blue-700" title="${p.email}">${p.email}</span></div>
+          </div>
+        </div>
+
+        <!-- Evaluación de Comisión (Estado y Observaciones) -->
+        <div class="bg-blue-50/70 rounded-lg p-3 border border-blue-200 space-y-3">
+          <h3 class="text-[11px] font-bold uppercase tracking-wider text-blue-900">Evaluación de Comisión</h3>
+
+          <div class="grid grid-cols-3 gap-2 text-xs">
+            <button onclick="setEstadoLocal(${p.id}, 'Pendiente')"
+              class="py-2 rounded font-semibold border transition ${ev.estado === 'Pendiente' ? 'bg-slate-700 text-white border-slate-700' : 'bg-white text-slate-600 border-slate-300'}">
+              Pendiente
+            </button>
+            <button onclick="setEstadoLocal(${p.id}, 'Evaluado')"
+              class="py-2 rounded font-semibold border transition ${ev.estado === 'Evaluado' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-emerald-700 border-slate-300'}">
+              ✓ Evaluado
+            </button>
+            <button onclick="setEstadoLocal(${p.id}, 'Observado')"
+              class="py-2 rounded font-semibold border transition ${ev.estado === 'Observado' ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-amber-700 border-slate-300'}">
+              ! Observado
+            </button>
+          </div>
+
+          <div>
+            <label class="text-[11px] text-slate-600 block mb-1">Observaciones de la Junta</label>
+            <textarea id="inp-obs" rows="3" placeholder="Ej: Título habilitante verificado..."
+              class="w-full px-2.5 py-2 border border-slate-300 rounded bg-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-600">${ev.obs || ''}</textarea>
+          </div>
+
+          <button id="btn-guardar-eval" onclick="guardarEnPlanilla(${p.id})"
+            class="w-full py-2.5 rounded font-bold text-xs bg-blue-900 hover:bg-blue-800 text-white transition">
+            Guardar Evaluación en Planilla
+          </button>
+        </div>
+      `;
+
+      renderVisor(p);
+    }
+
+    function renderVisor(p) {
+      const tabsCont = document.getElementById('tabs-documentos');
+      if (!p.docs[docActivo] && p.docs.cv) docActivo = 'cv';
+
+      tabsCont.innerHTML = DOC_TABS.map(tab => {
+        const fileId = p.docs[tab.key];
+        if (!fileId) {
+          return `<span class="text-[11px] px-2.5 py-1.5 rounded-t bg-slate-800/50 text-slate-500 cursor-not-allowed">${tab.label}</span>`;
+        }
+        const activo = docActivo === tab.key;
+        return `
+          <button onclick="cambiarDocumento('${tab.key}')"
+            class="text-[11px] px-2.5 py-1.5 rounded-t font-medium transition flex items-center gap-1.5 ${
+              activo ? 'bg-white text-slate-900 font-bold shadow' : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
+            }">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            ${tab.label}
+          </button>
+        `;
+      }).join('');
+
+      const activeId = p.docs[docActivo];
+      const iframe = document.getElementById('iframe-visor');
+      const msg = document.getElementById('visor-mensaje');
+      const extBtn = document.getElementById('btn-abrir-externo');
+
+      if (activeId) {
+        iframe.classList.remove('hidden');
+        msg.classList.add('hidden');
+        const previewUrl = `https://drive.google.com/file/d/${activeId}/preview`;
+        if (iframe.src !== previewUrl) iframe.src = previewUrl;
+        extBtn.href = `https://drive.google.com/file/d/${activeId}/view`;
+      } else {
+        iframe.classList.add('hidden');
+        iframe.src = 'about:blank';
+        msg.classList.remove('hidden');
+        extBtn.href = '#';
+      }
+    }
+
+    function cambiarDocumento(key) {
+      docActivo = key;
+      const p = postulantes.find(item => item.id === seleccionadoId);
+      if (p) renderVisor(p);
+    }
+
+    function toggleFullscreenVisor() {
+      document.getElementById('panel-visor').classList.toggle('visor-fullscreen');
+    }
+
+    document.getElementById('filtro-texto').addEventListener('input', aplicarFiltros);
+    document.getElementById('filtro-materia').addEventListener('change', aplicarFiltros);
+
+    document.querySelectorAll('.btn-nivel').forEach(btn => {
+      btn.addEventListener('click', () => {
+        filtroNivelActivo = btn.dataset.nivel;
+        document.querySelectorAll('.btn-nivel').forEach(b => {
+          b.className = 'btn-nivel px-2 md:px-2.5 py-1 rounded text-[11px] md:text-xs font-medium text-blue-100 hover:bg-blue-800 whitespace-nowrap';
+        });
+        btn.className = 'btn-nivel px-2 md:px-2.5 py-1 rounded text-[11px] md:text-xs font-bold bg-amber-400 text-blue-950 whitespace-nowrap';
+        poblarMaterias();
+        aplicarFiltros();
+      });
+    });
+
+    document.querySelectorAll('.btn-filtro-estado').forEach(btn => {
+      btn.addEventListener('click', () => {
+        filtroEstadoActivo = btn.dataset.estado;
+        document.querySelectorAll('.btn-filtro-estado').forEach(b => {
+          b.className = 'btn-filtro-estado flex-1 text-[11px] py-1.5 rounded font-medium bg-slate-200 text-slate-700';
+        });
+        btn.className = 'btn-filtro-estado flex-1 text-[11px] py-1.5 rounded font-medium bg-blue-900 text-white';
+        aplicarFiltros();
+      });
+    });
+
+    window.onload = inicializar;
+  </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Evaluación Docente 2026 - Escuela Sarmiento (UNT)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    .visor-fullscreen {
+      position: fixed !important;
+      inset: 0 !important;
+      z-index: 50 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+    }
+  </style>
+</head>
 <body class="bg-slate-100 text-slate-800 h-screen flex flex-col overflow-hidden font-sans">
 
   <!-- Barra Superior Institucional -->
