@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Evaluación Docente 2026 - Escuela Sarmiento (UNT)</title>
+  <title>Evaluación Docente - Escuela Sarmiento (UNT)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -31,9 +31,15 @@
         UNT
       </div>
       <div class="min-w-0">
-        <h1 class="text-xs sm:text-sm md:text-base font-bold leading-tight truncate">
-          Escuela y Liceo Vocacional Sarmiento — Evaluación 2026
-        </h1>
+        <div class="flex items-center gap-2 flex-wrap">
+          <h1 class="text-xs sm:text-sm md:text-base font-bold leading-tight truncate">
+            Escuela y Liceo Vocacional Sarmiento — Evaluación Docente
+          </h1>
+          <!-- Selector Rápido de Período en el Encabezado -->
+          <select id="select-periodo-header" onchange="cambiarPeriodoDesdeHeader(this.value)"
+            class="hidden bg-amber-400 text-blue-950 font-extrabold text-[11px] md:text-xs px-2 py-0.5 rounded cursor-pointer border border-amber-300 focus:outline-none">
+          </select>
+        </div>
         <p class="text-[11px] md:text-xs text-blue-200 truncate" id="subtitulo-convocatoria">Iniciando sistema...</p>
       </div>
     </div>
@@ -72,7 +78,7 @@
       </span>
       <button onclick="cargarDatos(true)" id="btn-actualizar"
         class="hidden bg-blue-700 hover:bg-blue-600 border border-blue-500 px-2.5 py-1 rounded text-xs font-semibold transition items-center gap-1 shrink-0"
-        title="Sincronizar nuevas inscripciones">
+        title="Sincronizar inscripciones">
         ↻ <span class="hidden sm:inline">Actualizar</span>
       </button>
     </div>
@@ -96,35 +102,41 @@
     </div>
   </nav>
 
-  <!-- Pantalla de Acceso de Coordinación -->
+  <!-- Pantalla de Acceso y Selección de Período -->
   <div id="pantalla-login" class="hidden flex-1 flex items-center justify-center bg-slate-100 p-4">
-    <div class="bg-white border border-slate-200 shadow-lg rounded-xl p-6 max-w-sm w-full space-y-4">
+    <div class="bg-white border border-slate-200 shadow-lg rounded-xl p-6 max-w-md w-full space-y-5">
       <div class="text-center space-y-1">
         <span class="text-[11px] font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full">
-          Acceso Restringido
+          Acceso Coordinación
         </span>
-        <h2 class="text-base font-extrabold text-slate-900">Padrón General de Inscriptos</h2>
+        <h2 class="text-lg font-extrabold text-slate-900">Seleccionar Período de Inscripción</h2>
         <p class="text-xs text-slate-500">
-          Ingrese la clave de coordinación para ver el listado completo y generar enlaces individuales.
+          Elija la convocatoria que desea consultar e ingrese la clave de coordinación.
         </p>
       </div>
-      <div class="space-y-2">
-        <input type="password" id="input-clave-coord" placeholder="Clave de coordinación..."
-          onkeydown="if(event.key==='Enter') validarClaveCoord()"
+
+      <!-- Tarjetas de Períodos Disponibles -->
+      <div id="grid-periodos-login" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
+
+      <div id="bloque-clave-login" class="space-y-2">
+        <label class="text-[11px] font-bold text-slate-600 block">Clave de Coordinación</label>
+        <input type="password" id="input-clave-coord" placeholder="Ingrese clave..."
+          onkeydown="if(event.key==='Enter') validarIngresoCoord()"
           class="w-full text-sm px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" />
         <p id="msg-error-clave" class="hidden text-xs text-red-600 font-medium">Clave incorrecta. Intente nuevamente.</p>
-        <button onclick="validarClaveCoord()"
-          class="w-full py-2.5 bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs rounded-lg transition">
-          Ingresar al Padrón General
-        </button>
       </div>
+
+      <button onclick="validarIngresoCoord()"
+        class="w-full py-2.5 bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs rounded-lg transition shadow-sm">
+        Ingresar al Padrón Seleccionado
+      </button>
     </div>
   </div>
 
   <!-- Pantalla de Carga -->
   <div id="pantalla-carga" class="flex-1 flex flex-col items-center justify-center bg-slate-100 gap-3 p-6">
     <div class="w-10 h-10 border-4 border-blue-900 border-t-transparent rounded-full animate-spin"></div>
-    <p class="text-sm font-semibold text-slate-700 text-center">Conectando con las planillas 2026...</p>
+    <p id="texto-carga" class="text-sm font-semibold text-slate-700 text-center">Iniciando sistema...</p>
   </div>
 
   <!-- Cuerpo Principal Responsive -->
@@ -214,18 +226,10 @@
     const API_URL = 'https://script.google.com/macros/s/AKfycbz60vq4DQO0qsrQ2A_gk_Ql1pGhHB0v-8juO_Tq6s_Xb_ZAyecy_UBFFZZOu9hzjEbGKw/exec';
 
     const urlParams = new URLSearchParams(window.location.search);
+    const PARAM_PERIODO = urlParams.get('periodo') || '';
     const PARAM_P = urlParams.get('p') || '';
     const PARAM_T = urlParams.get('t') || '';
     const MODO_INDIVIDUAL = Boolean(PARAM_P && PARAM_T);
-
-    const DOC_TABS = [
-      { key: 'cv', label: 'CV' },
-      { key: 'anexoTitulos', label: 'Anexo Títulos' },
-      { key: 'anexoAntec', label: 'Antecedentes' },
-      { key: 'formacionA', label: 'Formación A' },
-      { key: 'formacionB', label: 'Formación B' },
-      { key: 'extension', label: 'Extensión y Gestión' }
-    ];
 
     const NIVEL_BADGE = {
       Primario: 'bg-sky-100 text-sky-800 border-sky-300',
@@ -233,10 +237,14 @@
       Superior: 'bg-purple-100 text-purple-800 border-purple-300'
     };
 
+    let periodosDisponibles = [];
+    let periodoSeleccionado = PARAM_PERIODO || '2026';
+    let requiereClaveServer = true;
+
     let postulantes = [];
     let filtrados = [];
     let seleccionadoId = null;
-    let docActivo = 'cv';
+    let docActivoKey = 'cv';
     let filtroNivelActivo = '';
     let filtroEstadoActivo = '';
     let claveCoordActual = sessionStorage.getItem('elvs_clave_coord') || '';
@@ -245,9 +253,9 @@
 
     function getAuthPayload() {
       if (MODO_INDIVIDUAL) {
-        return { modo: 'individual', p: PARAM_P, t: PARAM_T };
+        return { periodo: periodoSeleccionado, modo: 'individual', p: PARAM_P, t: PARAM_T };
       }
-      return { modo: 'general', clave: claveCoordActual };
+      return { periodo: periodoSeleccionado, modo: 'general', clave: claveCoordActual };
     }
 
     function cambiarVistaMovil(vista) {
@@ -312,10 +320,56 @@
       } catch (e) {}
     }
 
-    function validarClaveCoord() {
+    function renderSelectorPeriodosLogin() {
+      const grid = document.getElementById('grid-periodos-login');
+      grid.innerHTML = periodosDisponibles.map(per => {
+        const sel = per.id === periodoSeleccionado;
+        return `
+          <button type="button" onclick="seleccionarPeriodoLogin('${per.id}')"
+            class="text-left p-3 rounded-xl border-2 transition flex flex-col gap-0.5 ${
+              sel ? 'border-blue-800 bg-blue-50/80 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300'
+            }">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-extrabold ${sel ? 'text-blue-950' : 'text-slate-800'}">${per.nombre}</span>
+              <span class="text-xs font-bold ${sel ? 'text-blue-700' : 'text-slate-300'}">${sel ? '✓' : '○'}</span>
+            </div>
+            <span class="text-[11px] ${sel ? 'text-blue-700 font-medium' : 'text-slate-500'}">${per.descripcion || ''}</span>
+          </button>
+        `;
+      }).join('');
+
+      const selHeader = document.getElementById('select-periodo-header');
+      selHeader.innerHTML = periodosDisponibles.map(per =>
+        `<option value="${per.id}" ${per.id === periodoSeleccionado ? 'selected' : ''}>Período: ${per.id}</option>`
+      ).join('');
+    }
+
+    function seleccionarPeriodoLogin(id) {
+      periodoSeleccionado = id;
+      renderSelectorPeriodosLogin();
+    }
+
+    function cambiarPeriodoDesdeHeader(nuevoPeriodo) {
+      periodoSeleccionado = nuevoPeriodo;
+      seleccionadoId = null;
+      docActivoKey = 'cv';
+      filtroNivelActivo = '';
+      filtroEstadoActivo = '';
+      document.getElementById('filtro-texto').value = '';
+      document.querySelectorAll('.btn-nivel').forEach((b, idx) => {
+        b.className = idx === 0
+          ? 'btn-nivel px-2 md:px-2.5 py-1 rounded text-[11px] md:text-xs font-bold bg-amber-400 text-blue-950 whitespace-nowrap'
+          : 'btn-nivel px-2 md:px-2.5 py-1 rounded text-[11px] md:text-xs font-medium text-blue-100 hover:bg-blue-800 whitespace-nowrap';
+      });
+      cargarDatos(false);
+    }
+
+    function validarIngresoCoord() {
       const inp = document.getElementById('input-clave-coord');
-      claveCoordActual = inp.value.trim();
-      if (!claveCoordActual) return;
+      if (requiereClaveServer) {
+        claveCoordActual = inp.value.trim();
+        if (!claveCoordActual) return;
+      }
       document.getElementById('msg-error-clave').classList.add('hidden');
       document.getElementById('pantalla-login').classList.add('hidden');
       cargarDatos(false);
@@ -338,10 +392,27 @@
       try {
         const resp = await fetch(`${API_URL}?action=config`);
         const cfg = await resp.json();
-        if (cfg && cfg.requiereClave && !claveCoordActual) {
+        periodosDisponibles = (cfg && cfg.periodos && cfg.periodos.length > 0)
+          ? cfg.periodos
+          : [{ id: '2026', nombre: 'Convocatoria 2026', descripcion: 'Período Activo' }];
+        requiereClaveServer = Boolean(cfg && cfg.requiereClave);
+
+        if (!periodosDisponibles.some(p => p.id === periodoSeleccionado)) {
+          periodoSeleccionado = periodosDisponibles[0].id;
+        }
+
+        renderSelectorPeriodosLogin();
+        document.getElementById('select-periodo-header').classList.remove('hidden');
+
+        if (!requiereClaveServer) {
+          document.getElementById('bloque-clave-login').classList.add('hidden');
+        }
+
+        // Mostrar pantalla de selección de período al ingresar (si no hay sesión activa)
+        if (!claveCoordActual) {
           document.getElementById('pantalla-carga').classList.add('hidden');
           document.getElementById('pantalla-login').classList.remove('hidden');
-          document.getElementById('subtitulo-convocatoria').textContent = 'Acceso de Coordinación';
+          document.getElementById('subtitulo-convocatoria').textContent = 'Seleccione el período de inscripción';
           return;
         }
       } catch (e) {}
@@ -355,6 +426,7 @@
         btnAct.disabled = true;
         btnAct.innerHTML = '↻ <span class="hidden sm:inline">Sincronizando...</span>';
       } else {
+        document.getElementById('texto-carga').textContent = `Cargando planillas del período ${periodoSeleccionado}...`;
         document.getElementById('pantalla-carga').classList.remove('hidden');
         document.getElementById('app-principal').classList.add('hidden');
         document.getElementById('nav-movil').classList.add('hidden');
@@ -364,6 +436,7 @@
         const auth = getAuthPayload();
         const query = new URLSearchParams({
           action: 'postulantes',
+          periodo: auth.periodo,
           modo: auth.modo,
           p: auth.p || '',
           t: auth.t || '',
@@ -386,12 +459,18 @@
           seleccionadoId = postulantes[0].id;
         }
 
+        const perInfo = periodosDisponibles.find(p => p.id === periodoSeleccionado);
+        const nombrePeriodo = perInfo ? perInfo.nombre : `Convocatoria ${periodoSeleccionado}`;
         const ahora = new Date();
         const horaTxt = ahora.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+
         document.getElementById('subtitulo-convocatoria').textContent = MODO_INDIVIDUAL
-          ? `Postulante asignado: ${postulantes[0] ? postulantes[0].nombre : ''}`
-          : `Convocatoria Activa 2026 · ${postulantes.length} inscripciones`;
+          ? `${nombrePeriodo} · Postulante: ${postulantes[0] ? postulantes[0].nombre : ''}`
+          : `${nombrePeriodo} · ${postulantes.length} inscripciones`;
         document.getElementById('hora-sync').textContent = `Act. ${horaTxt}`;
+
+        const selHeader = document.getElementById('select-periodo-header');
+        if (selHeader) selHeader.value = periodoSeleccionado;
 
         if (!MODO_INDIVIDUAL) {
           actualizarContadoresNivel();
@@ -455,7 +534,7 @@
       if (!p || !p.tokenIndividual) return;
 
       const baseUrl = window.location.origin + window.location.pathname;
-      const enlace = `${baseUrl}?p=${encodeURIComponent(p.nivel + '-' + p.rowNumber)}&t=${encodeURIComponent(p.tokenIndividual)}`;
+      const enlace = `${baseUrl}?periodo=${encodeURIComponent(p.periodo)}&p=${encodeURIComponent(p.nivel + '-' + p.rowNumber)}&t=${encodeURIComponent(p.tokenIndividual)}`;
 
       copiarTextoPortapapeles(enlace, () => {
         const btn = document.getElementById('btn-copiar-link');
@@ -569,7 +648,8 @@
           ? 'bg-amber-100 text-amber-800 border-amber-300'
           : 'bg-slate-100 text-slate-600 border-slate-300';
 
-        const docsCargados = DOC_TABS.filter(t => p.docs[t.key]).length;
+        const docsList = p.docs || [];
+        const docsCargados = docsList.filter(d => d.fileId).length;
 
         return `
           <button onclick="seleccionarPostulante(${p.id})"
@@ -585,7 +665,7 @@
                 <span class="text-[10px] px-1.5 py-0.2 rounded border font-semibold ${NIVEL_BADGE[p.nivel] || ''}">${p.nivel}</span>
                 <span>DNI: <strong class="text-slate-700">${p.dni}</strong></span>
               </div>
-              <span>${docsCargados}/6 docs</span>
+              <span>${docsCargados}/${docsList.length} docs</span>
             </div>
             <div class="text-[11px] text-blue-800 font-medium truncate" title="${p.materiasRaw}">
               ${p.materiasRaw}
@@ -651,7 +731,7 @@
         if (!json.ok) throw new Error(json.error || 'Error al guardar');
 
         btn.disabled = false;
-        btn.textContent = `✓ Guardado en planilla ${p.nivel}`;
+        btn.textContent = `✓ Guardado en planilla ${p.nivel} (${p.periodo})`;
         btn.className = 'w-full py-2.5 rounded font-bold text-xs bg-emerald-600 text-white transition';
         if (!MODO_INDIVIDUAL) {
           const baseNivel = filtroNivelActivo
@@ -682,14 +762,16 @@
         p ? `${posIdx + 1}/${filtrados.length}` : '-';
 
       if (!p) {
-        cont.innerHTML = '';
+        cont.innerHTML = '<div class="p-6 text-center text-xs text-slate-400">No hay registros disponibles en este período.</div>';
+        renderVisor(null);
         return;
       }
 
       const ev = p.evaluacion;
-      const docsCargados = DOC_TABS.filter(t => p.docs[t.key]).length;
+      const docsList = p.docs || [];
+      const docsCargados = docsList.filter(d => d.fileId).length;
       const mobDocs = document.getElementById('mob-cnt-docs');
-      if (mobDocs) mobDocs.textContent = `${docsCargados}/6`;
+      if (mobDocs) mobDocs.textContent = `${docsCargados}/${docsList.length}`;
 
       const tagsMaterias = p.materias.map(m =>
         `<span class="inline-block bg-blue-100 text-blue-950 border border-blue-200 text-xs font-medium px-2 py-1 rounded-md">${m}</span>`
@@ -700,6 +782,9 @@
           <div class="flex items-center gap-2 flex-wrap">
             <span class="text-[11px] font-bold px-2 py-0.5 rounded border ${NIVEL_BADGE[p.nivel] || ''}">
               Nivel ${p.nivel} · #${p.ordenNivel}
+            </span>
+            <span class="text-[11px] font-semibold bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">
+              Período ${p.periodo}
             </span>
             <span class="text-[11px] text-slate-400">Inscripto: ${p.timestamp}</span>
           </div>
@@ -727,7 +812,7 @@
         <button onclick="cambiarVistaMovil('visor')"
           class="lg:hidden w-full py-2.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold flex items-center justify-between shadow-sm">
           <span>📄 Ver documentación probatoria adjunta</span>
-          <span class="bg-emerald-500 text-slate-950 px-2 py-0.5 rounded-full text-[11px]">${docsCargados}/6 archivos →</span>
+          <span class="bg-emerald-500 text-slate-950 px-2 py-0.5 rounded-full text-[11px]">${docsCargados}/${docsList.length} archivos →</span>
         </button>
 
         <div class="bg-slate-50 rounded-lg p-3 border border-slate-200 space-y-2">
@@ -741,7 +826,7 @@
           </div>
         </div>
 
-        <!-- Evaluación de Comisión (Estado y Observaciones) -->
+        <!-- Evaluación de Comisión -->
         <div class="bg-blue-50/70 rounded-lg p-3 border border-blue-200 space-y-3">
           <h3 class="text-[11px] font-bold uppercase tracking-wider text-blue-900">Evaluación de Comisión</h3>
 
@@ -778,30 +863,43 @@
 
     function renderVisor(p) {
       const tabsCont = document.getElementById('tabs-documentos');
-      if (!p.docs[docActivo] && p.docs.cv) docActivo = 'cv';
-
-      tabsCont.innerHTML = DOC_TABS.map(tab => {
-        const fileId = p.docs[tab.key];
-        if (!fileId) {
-          return `<span class="text-[11px] px-2.5 py-1.5 rounded-t bg-slate-800/50 text-slate-500 cursor-not-allowed">${tab.label}</span>`;
-        }
-        const activo = docActivo === tab.key;
-        return `
-          <button onclick="cambiarDocumento('${tab.key}')"
-            class="text-[11px] px-2.5 py-1.5 rounded-t font-medium transition flex items-center gap-1.5 ${
-              activo ? 'bg-white text-slate-900 font-bold shadow' : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
-            }">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-            ${tab.label}
-          </button>
-        `;
-      }).join('');
-
-      const activeId = p.docs[docActivo];
       const iframe = document.getElementById('iframe-visor');
       const msg = document.getElementById('visor-mensaje');
       const extBtn = document.getElementById('btn-abrir-externo');
 
+      if (!p || !p.docs || p.docs.length === 0) {
+        tabsCont.innerHTML = '';
+        iframe.classList.add('hidden');
+        iframe.src = 'about:blank';
+        msg.classList.remove('hidden');
+        extBtn.href = '#';
+        return;
+      }
+
+      const docsList = p.docs;
+      let docSeleccionado = docsList.find(d => d.key === docActivoKey && d.fileId);
+      if (!docSeleccionado) {
+        docSeleccionado = docsList.find(d => d.fileId) || docsList[0];
+        docActivoKey = docSeleccionado.key;
+      }
+
+      tabsCont.innerHTML = docsList.map(doc => {
+        if (!doc.fileId) {
+          return `<span class="text-[11px] px-2.5 py-1.5 rounded-t bg-slate-800/50 text-slate-500 cursor-not-allowed">${doc.label}</span>`;
+        }
+        const activo = docActivoKey === doc.key;
+        return `
+          <button onclick="cambiarDocumento('${doc.key}')"
+            class="text-[11px] px-2.5 py-1.5 rounded-t font-medium transition flex items-center gap-1.5 ${
+              activo ? 'bg-white text-slate-900 font-bold shadow' : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
+            }">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            ${doc.label}
+          </button>
+        `;
+      }).join('');
+
+      const activeId = docSeleccionado ? docSeleccionado.fileId : '';
       if (activeId) {
         iframe.classList.remove('hidden');
         msg.classList.add('hidden');
@@ -817,7 +915,7 @@
     }
 
     function cambiarDocumento(key) {
-      docActivo = key;
+      docActivoKey = key;
       const p = postulantes.find(item => item.id === seleccionadoId);
       if (p) renderVisor(p);
     }
