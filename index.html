@@ -31,33 +31,27 @@
         UNT
       </div>
       <div class="min-w-0">
-        <div class="flex items-center gap-2 flex-wrap">
+        <div class="flex items-center gap-1.5 flex-wrap">
           <h1 class="text-xs sm:text-sm md:text-base font-bold leading-tight truncate">
             Escuela y Liceo Vocacional Sarmiento — Evaluación Docente
           </h1>
-          <!-- Selector Rápido de Período en el Encabezado (solo Coordinación) -->
-          <select id="select-periodo-header" onchange="cambiarPeriodoDesdeHeader(this.value)"
-            class="hidden bg-amber-400 text-blue-950 font-extrabold text-[11px] md:text-xs px-2 py-0.5 rounded cursor-pointer border border-amber-300 focus:outline-none">
-          </select>
+          <!-- Selector Rápido de Período/Concurso + Botón Crear Nuevo -->
+          <div id="controles-periodo-header" class="hidden items-center gap-1">
+            <select id="select-periodo-header" onchange="cambiarPeriodoDesdeHeader(this.value)"
+              class="bg-amber-400 text-blue-950 font-extrabold text-[11px] md:text-xs px-2 py-0.5 rounded cursor-pointer border border-amber-300 focus:outline-none max-w-[190px]">
+            </select>
+            <button onclick="abrirModalNuevoPeriodo()" title="Vincular nueva planilla de inscripción de Drive"
+              class="bg-emerald-500 hover:bg-emerald-400 text-blue-950 font-extrabold text-[11px] md:text-xs px-2 py-0.5 rounded transition shrink-0">
+              + Nuevo
+            </button>
+          </div>
         </div>
         <p class="text-[11px] md:text-xs text-blue-200 truncate" id="subtitulo-convocatoria">Iniciando sistema...</p>
       </div>
     </div>
 
-    <!-- Selector de Nivel (solo Coordinación) -->
+    <!-- Selector Dinámico de Nivel (solo Coordinación) -->
     <div class="hidden items-center bg-blue-900/90 p-1 rounded-lg border border-blue-700 gap-1 overflow-x-auto max-w-full order-3 lg:order-2" id="tabs-nivel">
-      <button data-nivel="" class="btn-nivel px-2 md:px-2.5 py-1 rounded text-[11px] md:text-xs font-bold bg-amber-400 text-blue-950 whitespace-nowrap">
-        Todos (<span id="cnt-nivel-todos">0</span>)
-      </button>
-      <button data-nivel="Primario" class="btn-nivel px-2 md:px-2.5 py-1 rounded text-[11px] md:text-xs font-medium text-blue-100 hover:bg-blue-800 whitespace-nowrap">
-        Primario (<span id="cnt-nivel-Primario">0</span>)
-      </button>
-      <button data-nivel="Secundario" class="btn-nivel px-2 md:px-2.5 py-1 rounded text-[11px] md:text-xs font-medium text-blue-100 hover:bg-blue-800 whitespace-nowrap">
-        Secundario (<span id="cnt-nivel-Secundario">0</span>)
-      </button>
-      <button data-nivel="Superior" class="btn-nivel px-2 md:px-2.5 py-1 rounded text-[11px] md:text-xs font-medium text-blue-100 hover:bg-blue-800 whitespace-nowrap">
-        Superior (<span id="cnt-nivel-Superior">0</span>)
-      </button>
     </div>
 
     <!-- Contadores y Botón Actualizar -->
@@ -102,20 +96,25 @@
     </div>
   </nav>
 
-  <!-- Pantalla de Acceso y Selección de Período (solo Coordinación) -->
-  <div id="pantalla-login" class="hidden flex-1 flex items-center justify-center bg-slate-100 p-4">
-    <div class="bg-white border border-slate-200 shadow-lg rounded-xl p-6 max-w-md w-full space-y-5">
+  <!-- Pantalla de Acceso y Selección de Período / Concurso -->
+  <div id="pantalla-login" class="hidden flex-1 flex items-center justify-center bg-slate-100 p-4 overflow-y-auto">
+    <div class="bg-white border border-slate-200 shadow-lg rounded-xl p-6 max-w-lg w-full space-y-5 my-auto">
       <div class="text-center space-y-1">
         <span class="text-[11px] font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full">
-          Acceso Coordinación
+          Acceso Departamento Concursos
         </span>
-        <h2 class="text-lg font-extrabold text-slate-900">Seleccionar Período de Inscripción</h2>
+        <h2 class="text-lg font-extrabold text-slate-900">Seleccionar Llamado / Inscripción</h2>
         <p class="text-xs text-slate-500">
-          Elija la convocatoria que desea consultar e ingrese la clave de coordinación.
+          Elija una convocatoria existente o vincule una nueva planilla de Google Drive.
         </p>
       </div>
 
-      <div id="grid-periodos-login" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
+      <div id="grid-periodos-login" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-60 overflow-y-auto pr-0.5"></div>
+
+      <button type="button" onclick="abrirModalNuevoPeriodo()"
+        class="w-full py-2 px-3 rounded-lg border-2 border-dashed border-emerald-600/60 bg-emerald-50/60 hover:bg-emerald-50 text-emerald-900 font-bold text-xs transition flex items-center justify-center gap-1.5">
+        + Crear nuevo apartado desde planilla de Drive
+      </button>
 
       <div id="bloque-clave-login" class="space-y-2">
         <label class="text-[11px] font-bold text-slate-600 block">Clave de Coordinación</label>
@@ -127,8 +126,72 @@
 
       <button onclick="validarIngresoCoord()"
         class="w-full py-2.5 bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs rounded-lg transition shadow-sm">
-        Ingresar al Padrón Seleccionado
+        Ingresar al Llamado Seleccionado
       </button>
+    </div>
+  </div>
+
+  <!-- Modal para Crear Nuevo Apartado / Concurso desde Google Sheets -->
+  <div id="modal-nuevo-periodo" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-lg w-full p-5 md:p-6 space-y-4 my-auto">
+      <div class="flex items-start justify-between gap-2 border-b border-slate-200 pb-3">
+        <div>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+            Alta Automática de Concurso
+          </span>
+          <h3 class="text-base font-extrabold text-slate-900 mt-1">Vincular Planilla de Inscripción</h3>
+        </div>
+        <button onclick="cerrarModalNuevoPeriodo()" class="text-slate-400 hover:text-slate-700 font-bold text-lg leading-none px-1">
+          ✕
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Nombre del apartado / llamado *</label>
+          <input type="text" id="nuevo-per-nombre" placeholder="Ej: Concurso Cargos Agosto 2026"
+            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" />
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Descripción o subtítulo (opcional)</label>
+          <input type="text" id="nuevo-per-desc" placeholder="Ej: Llamado abierto - Nivel Secundario"
+            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" />
+        </div>
+
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="font-bold text-slate-700">Planilla(s) de respuestas de Google Sheets *</label>
+            <button type="button" onclick="agregarFilaPlanillaModal()"
+              class="text-[11px] font-bold text-blue-700 hover:text-blue-900">
+              + Agregar otro nivel
+            </button>
+          </div>
+          <p class="text-[11px] text-slate-500">
+            Abra la planilla en Drive, copie el enlace de la barra de direcciones y péguelo aquí:
+          </p>
+          <div id="contenedor-filas-planillas" class="space-y-2 max-h-48 overflow-y-auto pr-0.5"></div>
+        </div>
+
+        <div id="bloque-clave-modal" class="pt-1">
+          <label class="font-bold text-slate-700 block mb-1">Clave de Coordinación (para autorizar el alta) *</label>
+          <input type="password" id="nuevo-per-clave" placeholder="Ingrese clave de coordinación..."
+            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" />
+        </div>
+
+        <p id="msg-error-modal" class="hidden text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-2.5 font-medium"></p>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
+        <button type="button" onclick="cerrarModalNuevoPeriodo()"
+          class="px-3.5 py-2 rounded-lg border border-slate-300 text-xs font-semibold text-slate-600 hover:bg-slate-50">
+          Cancelar
+        </button>
+        <button type="button" id="btn-guardar-periodo" onclick="guardarNuevoPeriodo()"
+          class="px-4 py-2 rounded-lg bg-blue-900 hover:bg-blue-800 text-white text-xs font-bold transition shadow-sm">
+          Crear Apartado y Cargar Datos
+        </button>
+      </div>
     </div>
   </div>
 
@@ -147,7 +210,6 @@
         <input type="text" id="filtro-texto" placeholder="Buscar por apellido, DNI, título..."
           class="w-full text-xs px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white" />
 
-        <!-- Bloque de Filtro por Materia y Botón de Enlace Compartible (solo Coordinación) -->
         <div id="bloque-filtro-materia" class="space-y-1.5">
           <select id="filtro-materia"
             class="w-full text-xs px-2.5 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white">
@@ -247,7 +309,8 @@
     const NIVEL_BADGE = {
       Primario: 'bg-sky-100 text-sky-800 border-sky-300',
       Secundario: 'bg-indigo-100 text-indigo-800 border-indigo-300',
-      Superior: 'bg-purple-100 text-purple-800 border-purple-300'
+      Superior: 'bg-purple-100 text-purple-800 border-purple-300',
+      General: 'bg-teal-100 text-teal-800 border-teal-300'
     };
 
     let periodosDisponibles = [];
@@ -263,6 +326,50 @@
     let claveCoordActual = sessionStorage.getItem('elvs_clave_coord') || '';
     let escudoIntentado = false;
     let vistaMovilActiva = MODO_INDIVIDUAL ? 'ficha' : 'padron';
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function construirHtmlTelefono(rawTel) {
+      const texto = String(rawTel || '').trim();
+      if (!texto) {
+        return '<span class="text-slate-400">No informado</span>';
+      }
+      const primerNumero = texto.split(/[\/,;]/)[0].trim();
+      const telHref = primerNumero.replace(/[^\d+]/g, '');
+      if (!telHref) {
+        return `<span class="font-medium text-slate-700">${escapeHtml(texto)}</span>`;
+      }
+      return `
+        <a href="tel:${escapeHtml(telHref)}"
+           title="Llamar al ${escapeHtml(primerNumero)}"
+           class="inline-flex items-center gap-1 font-semibold text-blue-700 hover:text-blue-900 underline decoration-blue-300 hover:decoration-blue-700 transition">
+          <span>📞</span><span>${escapeHtml(texto)}</span>
+        </a>
+      `;
+    }
+
+    function construirHtmlCorreo(rawEmail, nombreDocente) {
+      const correo = String(rawEmail || '').trim();
+      if (!correo) {
+        return '<span class="text-slate-400">No informado</span>';
+      }
+      const correoHref = correo.replace(/["<>\\s]/g, '');
+      const asunto = encodeURIComponent(`Escuela y Liceo Vocacional Sarmiento — Convocatoria Docente (${nombreDocente || ''})`);
+      return `
+        <a href="mailto:${escapeHtml(correoHref)}?subject=${asunto}"
+           title="Enviar correo a ${escapeHtml(correo)}"
+           class="inline-flex items-center gap-1 max-w-full font-semibold text-blue-700 hover:text-blue-900 underline decoration-blue-300 hover:decoration-blue-700 transition">
+          <span class="shrink-0">✉️</span><span class="truncate">${escapeHtml(correo)}</span>
+        </a>
+      `;
+    }
 
     function getAuthPayload() {
       if (MODO_INDIVIDUAL) {
@@ -352,23 +459,32 @@
       const grid = document.getElementById('grid-periodos-login');
       grid.innerHTML = periodosDisponibles.map(per => {
         const sel = per.id === periodoSeleccionado;
+        const btnEliminar = (!per.esBase)
+          ? `<span onclick="event.stopPropagation(); eliminarPeriodoDinamico('${per.id}', '${per.nombre.replace(/'/g, '')}')"
+               title="Quitar este apartado"
+               class="text-[10px] text-slate-400 hover:text-red-600 px-1 rounded">✕</span>`
+          : '';
+
         return `
-          <button type="button" onclick="seleccionarPeriodoLogin('${per.id}')"
-            class="text-left p-3 rounded-xl border-2 transition flex flex-col gap-0.5 ${
+          <div onclick="seleccionarPeriodoLogin('${per.id}')"
+            class="cursor-pointer text-left p-3 rounded-xl border-2 transition flex flex-col gap-0.5 ${
               sel ? 'border-blue-800 bg-blue-50/80 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300'
             }">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-extrabold ${sel ? 'text-blue-950' : 'text-slate-800'}">${per.nombre}</span>
-              <span class="text-xs font-bold ${sel ? 'text-blue-700' : 'text-slate-300'}">${sel ? '✓' : '○'}</span>
+            <div class="flex items-center justify-between gap-1">
+              <span class="text-xs font-extrabold truncate ${sel ? 'text-blue-950' : 'text-slate-800'}">${escapeHtml(per.nombre)}</span>
+              <div class="flex items-center gap-1 shrink-0">
+                ${btnEliminar}
+                <span class="text-xs font-bold ${sel ? 'text-blue-700' : 'text-slate-300'}">${sel ? '✓' : '○'}</span>
+              </div>
             </div>
-            <span class="text-[11px] ${sel ? 'text-blue-700 font-medium' : 'text-slate-500'}">${per.descripcion || ''}</span>
-          </button>
+            <span class="text-[11px] truncate ${sel ? 'text-blue-700 font-medium' : 'text-slate-500'}">${escapeHtml(per.descripcion || '')}</span>
+          </div>
         `;
       }).join('');
 
       const selHeader = document.getElementById('select-periodo-header');
       selHeader.innerHTML = periodosDisponibles.map(per =>
-        `<option value="${per.id}" ${per.id === periodoSeleccionado ? 'selected' : ''}>Período: ${per.id}</option>`
+        `<option value="${escapeHtml(per.id)}" ${per.id === periodoSeleccionado ? 'selected' : ''}>${escapeHtml(per.nombre)}</option>`
       ).join('');
     }
 
@@ -384,12 +500,151 @@
       filtroNivelActivo = '';
       filtroEstadoActivo = '';
       document.getElementById('filtro-texto').value = '';
-      document.querySelectorAll('.btn-nivel').forEach((b, idx) => {
-        b.className = idx === 0
-          ? 'btn-nivel px-2 md:px-2.5 py-1 rounded text-[11px] md:text-xs font-bold bg-amber-400 text-blue-950 whitespace-nowrap'
-          : 'btn-nivel px-2 md:px-2.5 py-1 rounded text-[11px] md:text-xs font-medium text-blue-100 hover:bg-blue-800 whitespace-nowrap';
-      });
       cargarDatos(false);
+    }
+
+    // --- Modal Nuevo Apartado / Concurso ---
+    function abrirModalNuevoPeriodo() {
+      document.getElementById('nuevo-per-nombre').value = '';
+      document.getElementById('nuevo-per-desc').value = '';
+      document.getElementById('msg-error-modal').classList.add('hidden');
+
+      const contFilas = document.getElementById('contenedor-filas-planillas');
+      contFilas.innerHTML = '';
+      agregarFilaPlanillaModal('General');
+
+      const bloqueClaveModal = document.getElementById('bloque-clave-modal');
+      if (!requiereClaveServer || claveCoordActual) {
+        bloqueClaveModal.classList.add('hidden');
+      } else {
+        bloqueClaveModal.classList.remove('hidden');
+        document.getElementById('nuevo-per-clave').value = document.getElementById('input-clave-coord').value || '';
+      }
+
+      document.getElementById('modal-nuevo-periodo').classList.remove('hidden');
+    }
+
+    function cerrarModalNuevoPeriodo() {
+      document.getElementById('modal-nuevo-periodo').classList.add('hidden');
+    }
+
+    function agregarFilaPlanillaModal(nivelDefault) {
+      const cont = document.getElementById('contenedor-filas-planillas');
+      const div = document.createElement('div');
+      div.className = 'fila-planilla-modal flex items-center gap-1.5 bg-slate-50 p-2 rounded-lg border border-slate-200';
+      div.innerHTML = `
+        <select class="inp-nivel-planilla text-xs px-2 py-1.5 border border-slate-300 rounded bg-white font-semibold shrink-0">
+          <option value="General" ${nivelDefault === 'General' ? 'selected' : ''}>Único / General</option>
+          <option value="Primario" ${nivelDefault === 'Primario' ? 'selected' : ''}>Primario</option>
+          <option value="Secundario" ${nivelDefault === 'Secundario' ? 'selected' : ''}>Secundario</option>
+          <option value="Superior" ${nivelDefault === 'Superior' ? 'selected' : ''}>Superior</option>
+        </select>
+        <input type="text" placeholder="Pegar enlace de Google Sheets (https://docs.google.com/spreadsheets/d/...)"
+          class="inp-url-planilla flex-1 text-xs px-2.5 py-1.5 border border-slate-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-600" />
+        <button type="button" onclick="this.parentElement.remove()" title="Quitar fila"
+          class="text-slate-400 hover:text-red-600 px-1.5 font-bold text-xs">✕</button>
+      `;
+      cont.appendChild(div);
+    }
+
+    async function guardarNuevoPeriodo() {
+      const nombre = document.getElementById('nuevo-per-nombre').value.trim();
+      const descripcion = document.getElementById('nuevo-per-desc').value.trim();
+      const errBox = document.getElementById('msg-error-modal');
+      errBox.classList.add('hidden');
+
+      const claveInput = claveCoordActual || document.getElementById('nuevo-per-clave').value.trim();
+      if (requiereClaveServer && !claveInput) {
+        errBox.textContent = 'Ingrese la clave de coordinación para autorizar la creación.';
+        errBox.classList.remove('hidden');
+        return;
+      }
+
+      const filas = document.querySelectorAll('.fila-planilla-modal');
+      const planillas = [];
+      filas.forEach(f => {
+        const nivel = f.querySelector('.inp-nivel-planilla').value;
+        const url = f.querySelector('.inp-url-planilla').value.trim();
+        if (url) planillas.push({ nivel: nivel, url: url });
+      });
+
+      if (!nombre || planillas.length === 0) {
+        errBox.textContent = 'Complete el nombre del apartado y pegue al menos un enlace de planilla.';
+        errBox.classList.remove('hidden');
+        return;
+      }
+
+      const btn = document.getElementById('btn-guardar-periodo');
+      btn.disabled = true;
+      btn.textContent = 'Verificando planilla en Drive...';
+
+      try {
+        const resp = await fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'crear_periodo',
+            periodoData: { nombre: nombre, descripcion: descripcion, planillas: planillas },
+            auth: { clave: claveInput }
+          })
+        });
+        const json = await resp.json();
+        if (!json.ok) {
+          throw new Error(
+            json.error === 'CLAVE_INVALIDA' ? 'Clave de coordinación incorrecta.' : (json.error || 'No se pudo vincular la planilla.')
+          );
+        }
+
+        if (claveInput) {
+          claveCoordActual = claveInput;
+          sessionStorage.setItem('elvs_clave_coord', claveCoordActual);
+        }
+
+        periodosDisponibles = json.periodos || periodosDisponibles;
+        periodoSeleccionado = json.nuevoPeriodo.id;
+        renderSelectorPeriodosLogin();
+
+        cerrarModalNuevoPeriodo();
+        document.getElementById('pantalla-login').classList.add('hidden');
+        cargarDatos(false);
+      } catch (err) {
+        errBox.textContent = err.message;
+        errBox.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Crear Apartado y Cargar Datos';
+      }
+    }
+
+    async function eliminarPeriodoDinamico(id, nombre) {
+      const claveInput = claveCoordActual || document.getElementById('input-clave-coord').value.trim();
+      if (requiereClaveServer && !claveInput) {
+        alert('Ingrese primero la clave de coordinación para eliminar un apartado.');
+        return;
+      }
+      if (!confirm(`¿Quitar el apartado "${nombre}" de la aplicación? (La planilla en Drive no se borra).`)) return;
+
+      try {
+        const resp = await fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'eliminar_periodo',
+            periodoId: id,
+            auth: { clave: claveInput }
+          })
+        });
+        const json = await resp.json();
+        if (!json.ok) {
+          alert(json.error === 'CLAVE_INVALIDA' ? 'Clave incorrecta.' : json.error);
+          return;
+        }
+        periodosDisponibles = json.periodos;
+        if (periodoSeleccionado === id) {
+          periodoSeleccionado = periodosDisponibles[0].id;
+        }
+        renderSelectorPeriodosLogin();
+      } catch (e) {
+        alert('Error al eliminar: ' + e.message);
+      }
     }
 
     function validarIngresoCoord() {
@@ -422,7 +677,7 @@
         const cfg = await resp.json();
         periodosDisponibles = (cfg && cfg.periodos && cfg.periodos.length > 0)
           ? cfg.periodos
-          : [{ id: '2026', nombre: 'Convocatoria 2026', descripcion: 'Período Activo' }];
+          : [{ id: '2026', nombre: 'Convocatoria 2026', descripcion: 'Período Activo', esBase: true }];
         requiereClaveServer = Boolean(cfg && cfg.requiereClave);
 
         if (!periodosDisponibles.some(p => p.id === periodoSeleccionado)) {
@@ -430,7 +685,9 @@
         }
 
         renderSelectorPeriodosLogin();
-        document.getElementById('select-periodo-header').classList.remove('hidden');
+        const ctrlHeader = document.getElementById('controles-periodo-header');
+        ctrlHeader.classList.remove('hidden');
+        ctrlHeader.classList.add('flex');
 
         if (!requiereClaveServer) {
           document.getElementById('bloque-clave-login').classList.add('hidden');
@@ -439,7 +696,7 @@
         if (!claveCoordActual) {
           document.getElementById('pantalla-carga').classList.add('hidden');
           document.getElementById('pantalla-login').classList.remove('hidden');
-          document.getElementById('subtitulo-convocatoria').textContent = 'Seleccione el período de inscripción';
+          document.getElementById('subtitulo-convocatoria').textContent = 'Seleccione o cree un apartado de inscripción';
           return;
         }
       } catch (e) {}
@@ -453,7 +710,7 @@
         btnAct.disabled = true;
         btnAct.innerHTML = '↻ <span class="hidden sm:inline">Sincronizando...</span>';
       } else {
-        document.getElementById('texto-carga').textContent = `Cargando planillas del período ${periodoSeleccionado}...`;
+        document.getElementById('texto-carga').textContent = 'Cargando docentes y documentación probatoria...';
         document.getElementById('pantalla-carga').classList.remove('hidden');
         document.getElementById('app-principal').classList.add('hidden');
         document.getElementById('nav-movil').classList.add('hidden');
@@ -495,17 +752,17 @@
 
         if (MODO_INDIVIDUAL) {
           document.getElementById('subtitulo-convocatoria').textContent =
-            `Convocatoria ${periodoSeleccionado} · Postulante: ${postulantes[0] ? postulantes[0].nombre : ''}`;
+            `${nombrePeriodo} · Postulante: ${postulantes[0] ? postulantes[0].nombre : ''}`;
         } else if (MODO_MATERIA) {
           const nivLabel = PARAM_NIVEL !== 'TODOS' ? ` (${PARAM_NIVEL})` : '';
           document.getElementById('subtitulo-convocatoria').textContent =
-            `Convocatoria ${periodoSeleccionado}${nivLabel} · ${postulantes.length} inscriptos en la materia`;
+            `${nombrePeriodo}${nivLabel} · ${postulantes.length} inscriptos en la materia`;
         } else {
           document.getElementById('subtitulo-convocatoria').textContent =
             `${nombrePeriodo} · ${postulantes.length} inscripciones`;
           const selHeader = document.getElementById('select-periodo-header');
           if (selHeader) selHeader.value = periodoSeleccionado;
-          actualizarContadoresNivel();
+          renderTabsNivelDinamicos();
           poblarMaterias();
         }
 
@@ -529,7 +786,7 @@
         document.getElementById('pantalla-carga').innerHTML =
           `<div class="text-center p-6 max-w-md bg-white rounded-xl border border-red-200 shadow-sm">
             <p class="text-red-600 text-sm font-bold mb-1">Acceso no disponible</p>
-            <p class="text-xs text-slate-600">${msg}</p>
+            <p class="text-xs text-slate-600">${escapeHtml(msg)}</p>
           </div>`;
       } finally {
         if (btnAct) {
@@ -539,6 +796,39 @@
           btnAct.innerHTML = '↻ <span class="hidden sm:inline">Actualizar</span>';
         }
       }
+    }
+
+    function renderTabsNivelDinamicos() {
+      const cont = document.getElementById('tabs-nivel');
+      const nivelesPresentes = [];
+      postulantes.forEach(p => {
+        if (p.nivel && !nivelesPresentes.includes(p.nivel)) nivelesPresentes.push(p.nivel);
+      });
+
+      const botones = [{ nivel: '', label: `Todos (${postulantes.length})` }];
+      nivelesPresentes.forEach(niv => {
+        const cnt = postulantes.filter(p => p.nivel === niv).length;
+        botones.push({ nivel: niv, label: `${niv} (${cnt})` });
+      });
+
+      cont.innerHTML = botones.map(b => {
+        const activo = filtroNivelActivo === b.nivel;
+        return `
+          <button data-nivel="${escapeHtml(b.nivel)}" onclick="seleccionarNivelTab('${escapeHtml(b.nivel)}')"
+            class="btn-nivel px-2 md:px-2.5 py-1 rounded text-[11px] md:text-xs whitespace-nowrap transition ${
+              activo ? 'font-bold bg-amber-400 text-blue-950' : 'font-medium text-blue-100 hover:bg-blue-800'
+            }">
+            ${escapeHtml(b.label)}
+          </button>
+        `;
+      }).join('');
+    }
+
+    function seleccionarNivelTab(nivel) {
+      filtroNivelActivo = nivel;
+      renderTabsNivelDinamicos();
+      poblarMaterias();
+      aplicarFiltros();
     }
 
     function copiarTextoPortapapeles(texto, onOk) {
@@ -637,14 +927,6 @@
       btn.className = 'w-full py-2 px-2.5 rounded-md bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm';
       btn.textContent = `🔗 Copiar enlace de esta materia${nivTxt}`;
       btn.classList.remove('hidden');
-    }
-
-    function actualizarContadoresNivel() {
-      document.getElementById('cnt-nivel-todos').textContent = postulantes.length;
-      ['Primario', 'Secundario', 'Superior'].forEach(niv => {
-        const el = document.getElementById('cnt-nivel-' + niv);
-        if (el) el.textContent = postulantes.filter(p => p.nivel === niv).length;
-      });
     }
 
     function actualizarEstadisticas(listaBase) {
@@ -748,19 +1030,19 @@
             class="w-full text-left px-3 py-3 lg:py-2.5 transition flex flex-col gap-1 ${activo ? 'bg-blue-50 border-l-4 border-l-blue-700' : 'hover:bg-slate-50'}">
             <div class="flex items-start justify-between gap-1.5">
               <span class="text-xs font-bold text-slate-800 leading-snug">
-                <span class="text-slate-400 font-normal">#${p.ordenNivel}</span> ${p.nombre}
+                <span class="text-slate-400 font-normal">#${p.ordenNivel}</span> ${escapeHtml(p.nombre)}
               </span>
-              <span class="text-[10px] px-1.5 py-0.5 rounded border font-medium shrink-0 ${badgeEstado}">${est}</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded border font-medium shrink-0 ${badgeEstado}">${escapeHtml(est)}</span>
             </div>
             <div class="flex items-center justify-between text-[11px] text-slate-500">
               <div class="flex items-center gap-1.5">
-                <span class="text-[10px] px-1.5 py-0.2 rounded border font-semibold ${NIVEL_BADGE[p.nivel] || ''}">${p.nivel}</span>
-                <span>DNI: <strong class="text-slate-700">${p.dni}</strong></span>
+                <span class="text-[10px] px-1.5 py-0.2 rounded border font-semibold ${NIVEL_BADGE[p.nivel] || 'bg-slate-100 text-slate-700 border-slate-300'}">${escapeHtml(p.nivel)}</span>
+                <span>DNI: <strong class="text-slate-700">${escapeHtml(p.dni)}</strong></span>
               </div>
               <span>${docsCargados}/${docsList.length} docs</span>
             </div>
-            <div class="text-[11px] text-blue-800 font-medium truncate" title="${p.materiasRaw}">
-              ${p.materiasRaw}
+            <div class="text-[11px] text-blue-800 font-medium truncate" title="${escapeHtml(p.materiasRaw)}">
+              ${escapeHtml(p.materiasRaw)}
             </div>
           </button>
         `;
@@ -823,7 +1105,7 @@
         if (!json.ok) throw new Error(json.error || 'Error al guardar');
 
         btn.disabled = false;
-        btn.textContent = `✓ Guardado en planilla ${p.nivel} (${p.periodo})`;
+        btn.textContent = `✓ Guardado en planilla ${p.nivel}`;
         btn.className = 'w-full py-2.5 rounded font-bold text-xs bg-emerald-600 text-white transition';
         if (!MODO_INDIVIDUAL) {
           const baseNivel = (!MODO_MATERIA && filtroNivelActivo)
@@ -854,7 +1136,7 @@
         p ? `${posIdx + 1}/${filtrados.length}` : '-';
 
       if (!p) {
-        cont.innerHTML = '<div class="p-6 text-center text-xs text-slate-400">No hay registros disponibles.</div>';
+        cont.innerHTML = '<div class="p-6 text-center text-xs text-slate-400">No hay registros disponibles en este llamado.</div>';
         renderVisor(null);
         return;
       }
@@ -871,33 +1153,33 @@
           esAsignada
             ? 'bg-amber-100 text-amber-950 border-amber-400 font-bold'
             : 'bg-blue-100 text-blue-950 border-blue-200'
-        }">${m}</span>`;
+        }">${escapeHtml(m)}</span>`;
       }).join('');
+
+      const htmlTelefono = construirHtmlTelefono(p.telefono);
+      const htmlCorreo = construirHtmlCorreo(p.email, p.nombre);
 
       cont.innerHTML = `
         <div class="border-b border-slate-200 pb-3">
           <div class="flex items-center gap-2 flex-wrap">
-            <span class="text-[11px] font-bold px-2 py-0.5 rounded border ${NIVEL_BADGE[p.nivel] || ''}">
-              Nivel ${p.nivel} · #${p.ordenNivel}
+            <span class="text-[11px] font-bold px-2 py-0.5 rounded border ${NIVEL_BADGE[p.nivel] || 'bg-slate-100 text-slate-700 border-slate-300'}">
+              ${escapeHtml(p.nivel)} · #${p.ordenNivel}
             </span>
-            <span class="text-[11px] font-semibold bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">
-              Período ${p.periodo}
-            </span>
-            <span class="text-[11px] text-slate-400">Inscripto: ${p.timestamp}</span>
+            <span class="text-[11px] text-slate-400">Inscripto: ${escapeHtml(p.timestamp)}</span>
           </div>
-          <h2 class="text-base md:text-lg font-extrabold text-slate-900 leading-tight mt-1.5">${p.nombre}</h2>
+          <h2 class="text-base md:text-lg font-extrabold text-slate-900 leading-tight mt-1.5">${escapeHtml(p.nombre)}</h2>
         </div>
 
         <div class="bg-amber-50/80 rounded-lg p-3 border border-amber-200 space-y-1">
           <h3 class="text-[11px] font-bold uppercase tracking-wider text-amber-900">Título Habilitante Declarado</h3>
-          <p class="text-xs font-bold text-slate-900 leading-relaxed">${p.titulo}</p>
+          <p class="text-xs font-bold text-slate-900 leading-relaxed">${escapeHtml(p.titulo)}</p>
         </div>
 
         <div class="bg-slate-50 rounded-lg p-3 border border-slate-200 space-y-2">
           <div class="flex items-center justify-between gap-2 flex-wrap">
             <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-600">Materias / Cargos Inscriptos</h3>
             <span class="text-[11px] font-semibold bg-white px-2 py-0.5 rounded border border-slate-200 text-slate-700">
-              Cant. declarada: ${p.cantAsignaturas || p.materias.length}
+              Cant. declarada: ${escapeHtml(p.cantAsignaturas || p.materias.length)}
             </span>
           </div>
           <div class="flex flex-wrap gap-1.5 pt-0.5">
@@ -914,12 +1196,18 @@
 
         <div class="bg-slate-50 rounded-lg p-3 border border-slate-200 space-y-2">
           <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Datos Personales del Docente</h3>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-            <div><span class="text-slate-400 block text-[11px]">D.N.I.</span><span class="font-bold">${p.dni}</span></div>
-            <div><span class="text-slate-400 block text-[11px]">Edad</span><span class="font-semibold">${p.edad} años</span></div>
-            <div class="sm:col-span-2"><span class="text-slate-400 block text-[11px]">Domicilio</span><span class="font-medium">${p.domicilio}</span></div>
-            <div><span class="text-slate-400 block text-[11px]">Teléfono</span><span class="font-medium text-blue-700">${p.telefono}</span></div>
-            <div class="truncate"><span class="text-slate-400 block text-[11px]">Correo</span><span class="font-medium text-blue-700" title="${p.email}">${p.email}</span></div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+            <div><span class="text-slate-400 block text-[11px]">D.N.I.</span><span class="font-bold">${escapeHtml(p.dni)}</span></div>
+            <div><span class="text-slate-400 block text-[11px]">Edad</span><span class="font-semibold">${escapeHtml(p.edad)} años</span></div>
+            <div class="sm:col-span-2"><span class="text-slate-400 block text-[11px]">Domicilio</span><span class="font-medium">${escapeHtml(p.domicilio)}</span></div>
+            <div>
+              <span class="text-slate-400 block text-[11px]">Teléfono</span>
+              ${htmlTelefono}
+            </div>
+            <div class="min-w-0">
+              <span class="text-slate-400 block text-[11px]">Correo</span>
+              ${htmlCorreo}
+            </div>
           </div>
         </div>
 
@@ -945,7 +1233,7 @@
           <div>
             <label class="text-[11px] text-slate-600 block mb-1">Observaciones de la Junta</label>
             <textarea id="inp-obs" rows="3" placeholder="Ej: Título habilitante verificado..."
-              class="w-full px-2.5 py-2 border border-slate-300 rounded bg-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-600">${ev.obs || ''}</textarea>
+              class="w-full px-2.5 py-2 border border-slate-300 rounded bg-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-600">${escapeHtml(ev.obs || '')}</textarea>
           </div>
 
           <button id="btn-guardar-eval" onclick="guardarEnPlanilla(${p.id})"
@@ -982,16 +1270,16 @@
 
       tabsCont.innerHTML = docsList.map(doc => {
         if (!doc.fileId) {
-          return `<span class="text-[11px] px-2.5 py-1.5 rounded-t bg-slate-800/50 text-slate-500 cursor-not-allowed">${doc.label}</span>`;
+          return `<span class="text-[11px] px-2.5 py-1.5 rounded-t bg-slate-800/50 text-slate-500 cursor-not-allowed">${escapeHtml(doc.label)}</span>`;
         }
         const activo = docActivoKey === doc.key;
         return `
-          <button onclick="cambiarDocumento('${doc.key}')"
+          <button onclick="cambiarDocumento('${escapeHtml(doc.key)}')"
             class="text-[11px] px-2.5 py-1.5 rounded-t font-medium transition flex items-center gap-1.5 ${
               activo ? 'bg-white text-slate-900 font-bold shadow' : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
             }">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-            ${doc.label}
+            ${escapeHtml(doc.label)}
           </button>
         `;
       }).join('');
@@ -1023,18 +1311,6 @@
 
     document.getElementById('filtro-texto').addEventListener('input', aplicarFiltros);
     document.getElementById('filtro-materia').addEventListener('change', aplicarFiltros);
-
-    document.querySelectorAll('.btn-nivel').forEach(btn => {
-      btn.addEventListener('click', () => {
-        filtroNivelActivo = btn.dataset.nivel;
-        document.querySelectorAll('.btn-nivel').forEach(b => {
-          b.className = 'btn-nivel px-2 md:px-2.5 py-1 rounded text-[11px] md:text-xs font-medium text-blue-100 hover:bg-blue-800 whitespace-nowrap';
-        });
-        btn.className = 'btn-nivel px-2 md:px-2.5 py-1 rounded text-[11px] md:text-xs font-bold bg-amber-400 text-blue-950 whitespace-nowrap';
-        poblarMaterias();
-        aplicarFiltros();
-      });
-    });
 
     document.querySelectorAll('.btn-filtro-estado').forEach(btn => {
       btn.addEventListener('click', () => {
