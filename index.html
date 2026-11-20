@@ -1179,7 +1179,7 @@
           <div class="flex items-center justify-between gap-2 flex-wrap">
             <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-600">Materias / Cargos Inscriptos</h3>
             <span class="text-[11px] font-semibold bg-white px-2 py-0.5 rounded border border-slate-200 text-slate-700">
-              Cant. declarada: ${escapeHtml(p.cantAsignaturas || p.materias.length)}
+              ${p.cantEsCalculada ? 'Cant. calculada' : 'Cant. declarada'}: ${escapeHtml(p.cantAsignaturas || p.materias.length)}
             </span>
           </div>
           <div class="flex flex-wrap gap-1.5 pt-0.5">
