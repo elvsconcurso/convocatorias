@@ -35,14 +35,18 @@
           <h1 class="text-xs sm:text-sm md:text-base font-bold leading-tight truncate">
             Escuela y Liceo Vocacional Sarmiento — Evaluación Docente
           </h1>
-          <!-- Selector Rápido de Período/Concurso + Botón Crear Nuevo -->
-          <div id="controles-periodo-header" class="hidden items-center gap-1">
+          <!-- Selector Rápido de Período/Concurso + Botón Crear Nuevo + Botón Jurados -->
+          <div id="controles-periodo-header" class="hidden items-center gap-1 flex-wrap">
             <select id="select-periodo-header" onchange="cambiarPeriodoDesdeHeader(this.value)"
-              class="bg-amber-400 text-blue-950 font-extrabold text-[11px] md:text-xs px-2 py-0.5 rounded cursor-pointer border border-amber-300 focus:outline-none max-w-[190px]">
+              class="bg-amber-400 text-blue-950 font-extrabold text-[11px] md:text-xs px-2 py-0.5 rounded cursor-pointer border border-amber-300 focus:outline-none max-w-[180px]">
             </select>
             <button onclick="abrirModalNuevoPeriodo()" title="Vincular nueva planilla de inscripción de Drive"
               class="bg-emerald-500 hover:bg-emerald-400 text-blue-950 font-extrabold text-[11px] md:text-xs px-2 py-0.5 rounded transition shrink-0">
               + Nuevo
+            </button>
+            <button onclick="abrirModalJurados()" title="Gestionar base de datos de jurados evaluadores y recordatorios"
+              class="bg-sky-300 hover:bg-sky-200 text-blue-950 font-extrabold text-[11px] md:text-xs px-2 py-0.5 rounded transition shrink-0">
+              👥 Jurados
             </button>
           </div>
         </div>
@@ -54,10 +58,12 @@
     <div class="hidden items-center bg-blue-900/90 p-1 rounded-lg border border-blue-700 gap-1 overflow-x-auto max-w-full order-3 lg:order-2" id="tabs-nivel">
     </div>
 
-    <!-- Contadores y Botón Actualizar -->
+    <!-- Contadores, Vigencia y Botón Actualizar -->
     <div class="flex items-center gap-1.5 md:gap-2 text-[11px] md:text-xs order-2 lg:order-3 flex-wrap">
       <span id="badge-modo-restringido" class="hidden bg-amber-400 text-blue-950 font-bold px-2.5 py-0.5 rounded-full text-[11px] max-w-[260px] sm:max-w-xs truncate">
         Evaluación Asignada
+      </span>
+      <span id="badge-vigencia-jurado" class="hidden bg-emerald-900/80 border border-emerald-500 text-emerald-100 font-semibold px-2.5 py-0.5 rounded-full text-[11px]">
       </span>
       <div id="stats-generales" class="hidden items-center gap-1.5">
         <span class="bg-emerald-900/70 border border-emerald-600 text-emerald-200 px-2 py-0.5 md:px-2.5 md:py-1 rounded-full">
@@ -101,7 +107,7 @@
     <div class="bg-white border border-slate-200 shadow-lg rounded-xl p-6 max-w-lg w-full space-y-5 my-auto">
       <div class="text-center space-y-1">
         <span class="text-[11px] font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full">
-          Acceso Departamento Concursos
+          Acceso Coordinación y Concursos
         </span>
         <h2 class="text-lg font-extrabold text-slate-900">Seleccionar Llamado / Inscripción</h2>
         <p class="text-xs text-slate-500">
@@ -141,9 +147,7 @@
           </span>
           <h3 class="text-base font-extrabold text-slate-900 mt-1">Vincular Planilla de Inscripción</h3>
         </div>
-        <button onclick="cerrarModalNuevoPeriodo()" class="text-slate-400 hover:text-slate-700 font-bold text-lg leading-none px-1">
-          ✕
-        </button>
+        <button onclick="cerrarModalNuevoPeriodo()" class="text-slate-400 hover:text-slate-700 font-bold text-lg leading-none px-1">✕</button>
       </div>
 
       <div class="space-y-3 text-xs">
@@ -195,6 +199,120 @@
     </div>
   </div>
 
+  <!-- Modal Gestión Base de Datos de Jurados y Recordatorios -->
+  <div id="modal-jurados" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-2xl w-full p-5 md:p-6 space-y-4 my-auto">
+      <div class="flex items-start justify-between gap-2 border-b border-slate-200 pb-3">
+        <div>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-sky-800 bg-sky-100 px-2 py-0.5 rounded-full">
+            Tribunal Evaluador
+          </span>
+          <h3 class="text-base font-extrabold text-slate-900 mt-1">Base de Datos de Jurados y Notificaciones</h3>
+        </div>
+        <button onclick="cerrarModalJurados()" class="text-slate-400 hover:text-slate-700 font-bold text-lg leading-none px-1">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2">
+          <div class="flex items-center justify-between flex-wrap gap-1">
+            <label class="font-bold text-slate-700">Planilla de Google Sheets con la nómina de Jurados</label>
+            <span id="estado-planilla-jurados" class="text-[11px] font-semibold text-slate-500">Sin vincular</span>
+          </div>
+          <p class="text-[11px] text-slate-500">
+            Columnas recomendadas: <strong>Apellido y Nombre</strong>, <strong>DNI</strong>, <strong>Correo Electrónico</strong> (opcionales: <em>Teléfono, Nivel, Especialidad, Rol</em>).
+          </p>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <input type="text" id="inp-url-jurados" placeholder="Pegar enlace de Google Sheets de Jurados..."
+              class="flex-1 px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-600" />
+            <button type="button" id="btn-vincular-jurados" onclick="vincularPlanillaJurados()"
+              class="px-3.5 py-2 rounded-lg bg-blue-900 hover:bg-blue-800 text-white font-bold transition shrink-0">
+              Vincular Planilla
+            </button>
+          </div>
+        </div>
+
+        <!-- Activador de Recordatorios Automáticos -->
+        <div class="bg-amber-50/80 border border-amber-200 rounded-lg p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+          <div>
+            <p class="font-bold text-amber-950">Recordatorios automáticos de vencimiento (plazo 10 días)</p>
+            <p class="text-[11px] text-amber-800">
+              Envía alertas por correo cuando falten 3 días y 1 día para el vencimiento, y avisa a Concursos si expira con pendientes.
+            </p>
+          </div>
+          <button type="button" id="btn-activar-trigger" onclick="activarRecordatoriosDiarios()"
+            class="px-3 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-blue-950 font-extrabold transition shrink-0">
+            ⏰ Activar alertas diarias
+          </button>
+        </div>
+
+        <p id="msg-modal-jurados" class="hidden text-xs rounded-lg p-2.5 font-medium"></p>
+
+        <!-- Listado de Jurados Cargados -->
+        <div class="border border-slate-200 rounded-lg overflow-hidden">
+          <div class="bg-slate-100 px-3 py-1.5 border-b border-slate-200 flex justify-between font-bold text-slate-600">
+            <span>Jurados disponibles para asignar</span>
+            <span id="cnt-jurados-modal">0 cargados</span>
+          </div>
+          <div id="lista-jurados-modal" class="max-h-52 overflow-y-auto divide-y divide-slate-100 bg-white">
+            <div class="p-4 text-center text-slate-400">Vincule una planilla para visualizar los jurados.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end pt-2 border-t border-slate-200">
+        <button type="button" onclick="cerrarModalJurados()"
+          class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Asignar Enlace Individual a Jurado (con vigencia en días y envío de correo) -->
+  <div id="modal-asignar-individual" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-md w-full p-5 space-y-4 my-auto">
+      <div class="flex items-start justify-between gap-2 border-b border-slate-200 pb-3">
+        <div>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-blue-800 bg-blue-50 px-2 py-0.5 rounded-full">
+            Evaluación Individual
+          </span>
+          <h3 class="text-base font-extrabold text-slate-900 mt-1" id="titulo-modal-ind">Asignar Postulante</h3>
+        </div>
+        <button onclick="cerrarModalAsignarIndividual()" class="text-slate-400 hover:text-slate-700 font-bold text-lg leading-none px-1">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Jurado Evaluador (firma el dictamen)</label>
+          <select id="sel-jurado-individual"
+            class="w-full px-2.5 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-600">
+            <option value="">Enlace genérico (sin jurado específico)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Vigencia reglamentaria del enlace (en días)</label>
+          <input type="number" id="inp-dias-individual" value="10" min="1" max="365"
+            class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white font-bold focus:outline-none focus:ring-2 focus:ring-blue-600" />
+          <p class="text-[11px] text-slate-500 mt-1">Por reglamento se establece un plazo de 10 días corridos desde su emisión.</p>
+        </div>
+
+        <p id="msg-modal-individual" class="hidden text-xs rounded-lg p-2.5 font-medium"></p>
+
+        <div class="grid grid-cols-1 gap-2 pt-1">
+          <button type="button" id="btn-ind-copiar" onclick="ejecutarAsignacionIndividual(false)"
+            class="w-full py-2.5 px-3 rounded-lg bg-blue-900 hover:bg-blue-800 text-white font-bold transition">
+            🔗 Generar y copiar enlace
+          </button>
+          <button type="button" id="btn-ind-correo" onclick="ejecutarAsignacionIndividual(true)"
+            class="w-full py-2.5 px-3 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-bold transition">
+            ✉️ Generar y enviar por correo al jurado
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Pantalla de Carga -->
   <div id="pantalla-carga" class="flex-1 flex flex-col items-center justify-center bg-slate-100 gap-3 p-6">
     <div class="w-10 h-10 border-4 border-blue-900 border-t-transparent rounded-full animate-spin"></div>
@@ -216,10 +334,39 @@
             <option value="">Todas las materias / cargos</option>
           </select>
 
-          <button id="btn-copiar-link-materia" onclick="copiarEnlaceMateria()"
-            class="hidden w-full py-2 px-2.5 rounded-md bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
-            🔗 Copiar enlace de esta materia
-          </button>
+          <!-- Panel de Asignación a Jurado por Materia / Cargo -->
+          <div id="panel-asignacion-materia" class="hidden bg-emerald-50/90 border border-emerald-300 rounded-lg p-2.5 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-extrabold text-emerald-950">Asignar Materia a Jurado</span>
+              <button type="button" onclick="abrirModalJurados()" class="text-[10px] font-bold text-blue-700 hover:underline">
+                + Nómina
+              </button>
+            </div>
+
+            <select id="sel-jurado-materia"
+              class="w-full text-xs px-2 py-1.5 border border-emerald-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600">
+              <option value="">Jurado: Genérico (sin nombre)</option>
+            </select>
+
+            <div class="flex items-center gap-2">
+              <label class="text-[11px] font-semibold text-slate-700 shrink-0">Vigencia (días):</label>
+              <input type="number" id="inp-dias-materia" value="10" min="1" max="365"
+                class="w-16 text-xs px-2 py-1 border border-emerald-300 rounded bg-white font-bold text-center" />
+              <span class="text-[10px] text-slate-500 leading-tight">Plazo reglam.</span>
+            </div>
+
+            <div class="grid grid-cols-1 gap-1.5">
+              <button id="btn-copiar-link-materia" onclick="ejecutarAsignacionMateria(false)"
+                class="w-full py-1.5 px-2.5 rounded-md bg-blue-900 hover:bg-blue-800 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
+                🔗 Copiar enlace de esta materia
+              </button>
+              <button id="btn-enviar-link-materia" onclick="ejecutarAsignacionMateria(true)"
+                class="w-full py-1.5 px-2.5 rounded-md bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
+                ✉️ Enviar enlace por correo al jurado
+              </button>
+            </div>
+            <p id="msg-asig-materia" class="hidden text-[11px] font-semibold text-center"></p>
+          </div>
         </div>
 
         <div class="flex gap-1">
@@ -256,9 +403,9 @@
             Sig. →
           </button>
         </div>
-        <button id="btn-copiar-link" onclick="copiarEnlaceIndividual(seleccionadoId)"
+        <button id="btn-copiar-link" onclick="abrirModalAsignarIndividual()"
           class="text-[11px] bg-blue-900 hover:bg-blue-800 text-white px-2.5 py-1 rounded font-semibold transition shrink-0">
-          🔗 Copiar enlace individual
+          🔗 Asignar enlace individual
         </button>
       </div>
 
@@ -301,6 +448,9 @@
     const PARAM_P = urlParams.get('p') || '';
     const PARAM_M = urlParams.get('m') || '';
     const PARAM_NIVEL = urlParams.get('nivel') || 'TODOS';
+    const PARAM_EXP = urlParams.get('exp') || '';
+    const PARAM_J = urlParams.get('j') || '';
+    const PARAM_JN = urlParams.get('jn') || '';
     const PARAM_T = urlParams.get('t') || '';
 
     const MODO_INDIVIDUAL = Boolean(PARAM_P && PARAM_T);
@@ -317,12 +467,16 @@
     let periodoSeleccionado = PARAM_PERIODO || '2026';
     let requiereClaveServer = true;
 
+    let juradosConfig = null;
+    let listaJurados = [];
+
     let postulantes = [];
     let filtrados = [];
     let seleccionadoId = null;
     let docActivoKey = 'cv';
     let filtroNivelActivo = '';
     let filtroEstadoActivo = '';
+    let estadoSeleccionadoLocal = null;
     let claveCoordActual = sessionStorage.getItem('elvs_clave_coord') || '';
     let escudoIntentado = false;
     let vistaMovilActiva = MODO_INDIVIDUAL ? 'ficha' : 'padron';
@@ -371,12 +525,73 @@
       `;
     }
 
+    function renderHistorialObservaciones(obsRaw) {
+      const texto = String(obsRaw || '').trim();
+      if (!texto) {
+        return '<p class="text-[11px] text-slate-400 italic">Aún no se registraron dictámenes ni observaciones.</p>';
+      }
+
+      const lineas = texto.split('\n').map(l => l.trim()).filter(Boolean);
+      const regexEntrada = /^\[(.+?)\s+-\s+(.+?)\s+-\s+(Pendiente|Evaluado|Observado)\]:\s*(.*)$/;
+
+      return lineas.map(linea => {
+        const m = linea.match(regexEntrada);
+        if (!m) {
+          return `
+            <div class="bg-white border border-slate-200 rounded p-2 text-[11px] text-slate-700">
+              ${escapeHtml(linea)}
+            </div>
+          `;
+        }
+        const fecha = m[1];
+        const autor = m[2];
+        const est = m[3];
+        const detalle = m[4];
+
+        const badgeCls = est === 'Evaluado'
+          ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+          : est === 'Observado'
+          ? 'bg-amber-100 text-amber-800 border-amber-300'
+          : 'bg-slate-100 text-slate-700 border-slate-300';
+
+        return `
+          <div class="bg-white border border-slate-200 rounded-md p-2 space-y-1 shadow-2xs">
+            <div class="flex items-center justify-between gap-1.5 flex-wrap">
+              <span class="text-[11px] font-bold text-slate-800">👤 ${escapeHtml(autor)}</span>
+              <div class="flex items-center gap-1.5">
+                <span class="text-[10px] text-slate-400">${escapeHtml(fecha)}</span>
+                <span class="text-[10px] px-1.5 py-0.2 rounded border font-bold ${badgeCls}">${escapeHtml(est)}</span>
+              </div>
+            </div>
+            <p class="text-[11px] text-slate-700 leading-snug">${escapeHtml(detalle)}</p>
+          </div>
+        `;
+      }).join('');
+    }
+
     function getAuthPayload() {
       if (MODO_INDIVIDUAL) {
-        return { periodo: periodoSeleccionado, modo: 'individual', p: PARAM_P, t: PARAM_T };
+        return {
+          periodo: periodoSeleccionado,
+          modo: 'individual',
+          p: PARAM_P,
+          exp: PARAM_EXP,
+          j: PARAM_J,
+          jn: PARAM_JN,
+          t: PARAM_T
+        };
       }
       if (MODO_MATERIA) {
-        return { periodo: periodoSeleccionado, modo: 'materia', m: PARAM_M, nivel: PARAM_NIVEL, t: PARAM_T };
+        return {
+          periodo: periodoSeleccionado,
+          modo: 'materia',
+          m: PARAM_M,
+          nivel: PARAM_NIVEL,
+          exp: PARAM_EXP,
+          j: PARAM_J,
+          jn: PARAM_JN,
+          t: PARAM_T
+        };
       }
       return { periodo: periodoSeleccionado, modo: 'general', clave: claveCoordActual };
     }
@@ -416,11 +631,22 @@
 
     function configurarInterfazSegunModo() {
       const badgeRestringido = document.getElementById('badge-modo-restringido');
+      const badgeVigencia = document.getElementById('badge-vigencia-jurado');
+
+      if (MODO_INDIVIDUAL || MODO_MATERIA) {
+        if (PARAM_EXP && !isNaN(Number(PARAM_EXP))) {
+          const fechaLim = new Date(Number(PARAM_EXP)).toLocaleString('es-AR', {
+            day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+          });
+          badgeVigencia.textContent = `⏳ Plazo hasta: ${fechaLim} hs`;
+          badgeVigencia.classList.remove('hidden');
+        }
+      }
 
       if (MODO_INDIVIDUAL) {
         document.getElementById('barra-navegacion').classList.add('hidden');
         document.getElementById('mob-tab-padron').classList.add('hidden');
-        badgeRestringido.textContent = 'Evaluación Individual';
+        badgeRestringido.textContent = PARAM_JN ? `Jurado: ${PARAM_JN}` : 'Evaluación Individual';
         badgeRestringido.classList.remove('hidden');
       } else if (MODO_MATERIA) {
         document.getElementById('bloque-filtro-materia').classList.add('hidden');
@@ -428,8 +654,9 @@
         document.getElementById('stats-generales').classList.remove('hidden');
         document.getElementById('stats-generales').classList.add('flex');
         const nivTxt = PARAM_NIVEL !== 'TODOS' ? ` · ${PARAM_NIVEL}` : '';
-        badgeRestringido.textContent = `Materia: ${PARAM_M}${nivTxt}`;
-        badgeRestringido.title = `${PARAM_M}${nivTxt}`;
+        const jurTxt = PARAM_JN ? ` (${PARAM_JN})` : '';
+        badgeRestringido.textContent = `Materia: ${PARAM_M}${nivTxt}${jurTxt}`;
+        badgeRestringido.title = `${PARAM_M}${nivTxt}${jurTxt}`;
         badgeRestringido.classList.remove('hidden');
       } else {
         document.getElementById('tabs-nivel').classList.remove('hidden');
@@ -496,11 +723,166 @@
     function cambiarPeriodoDesdeHeader(nuevoPeriodo) {
       periodoSeleccionado = nuevoPeriodo;
       seleccionadoId = null;
+      estadoSeleccionadoLocal = null;
       docActivoKey = 'cv';
       filtroNivelActivo = '';
       filtroEstadoActivo = '';
       document.getElementById('filtro-texto').value = '';
       cargarDatos(false);
+    }
+
+    // --- Gestión de Base de Datos de Jurados ---
+    async function cargarListaJuradosServidor() {
+      if (!claveCoordActual && requiereClaveServer) return;
+      try {
+        const query = new URLSearchParams({ action: 'jurados', clave: claveCoordActual });
+        const resp = await fetch(`${API_URL}?${query.toString()}`);
+        const json = await resp.json();
+        if (json && json.ok) {
+          juradosConfig = json.juradosConfig;
+          listaJurados = json.jurados || [];
+          poblarSelectoresJurados();
+          renderListaJuradosModal();
+        }
+      } catch (e) {}
+    }
+
+    function poblarSelectoresJurados() {
+      const opciones = ['<option value="">Jurado: Genérico (sin asignar)</option>'];
+      listaJurados.forEach((j, idx) => {
+        const esp = j.especialidad ? ` · ${j.especialidad}` : '';
+        const niv = j.nivel ? ` [${j.nivel}]` : '';
+        opciones.push(`<option value="${idx}">${escapeHtml(j.nombre)}${escapeHtml(niv)}${escapeHtml(esp)}</option>`);
+      });
+
+      const selMat = document.getElementById('sel-jurado-materia');
+      const selInd = document.getElementById('sel-jurado-individual');
+      if (selMat) selMat.innerHTML = opciones.join('');
+      if (selInd) selInd.innerHTML = opciones.join('');
+    }
+
+    function renderListaJuradosModal() {
+      const estadoLbl = document.getElementById('estado-planilla-jurados');
+      const cntLbl = document.getElementById('cnt-jurados-modal');
+      const cont = document.getElementById('lista-jurados-modal');
+
+      if (juradosConfig && juradosConfig.tituloPlanilla) {
+        estadoLbl.textContent = `✓ Vinculada: ${juradosConfig.tituloPlanilla}`;
+        estadoLbl.className = 'text-[11px] font-bold text-emerald-700';
+      } else {
+        estadoLbl.textContent = 'Sin vincular';
+        estadoLbl.className = 'text-[11px] font-semibold text-slate-500';
+      }
+
+      cntLbl.textContent = `${listaJurados.length} cargados`;
+
+      if (listaJurados.length === 0) {
+        cont.innerHTML = '<div class="p-4 text-center text-slate-400">No hay jurados cargados aún. Pegue el enlace de su planilla arriba.</div>';
+        return;
+      }
+
+      cont.innerHTML = listaJurados.map(j => `
+        <div class="px-3 py-2 flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <p class="font-bold text-slate-800 truncate">${escapeHtml(j.nombre)} ${j.rol ? `<span class="text-[10px] font-semibold text-blue-700">(${escapeHtml(j.rol)})</span>` : ''}</p>
+            <p class="text-[11px] text-slate-500 truncate">
+              ${j.email ? `✉️ ${escapeHtml(j.email)}` : '<span class="text-amber-600">Sin correo</span>'}
+              ${j.especialidad ? ` · ${escapeHtml(j.especialidad)}` : ''}
+            </p>
+          </div>
+          <div class="text-right shrink-0 text-[10px] text-slate-500">
+            ${j.nivel ? `<span class="bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded font-semibold">${escapeHtml(j.nivel)}</span>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function abrirModalJurados() {
+      document.getElementById('msg-modal-jurados').classList.add('hidden');
+      renderListaJuradosModal();
+      document.getElementById('modal-jurados').classList.remove('hidden');
+      cargarListaJuradosServidor();
+    }
+
+    function cerrarModalJurados() {
+      document.getElementById('modal-jurados').classList.add('hidden');
+    }
+
+    async function vincularPlanillaJurados() {
+      const url = document.getElementById('inp-url-jurados').value.trim();
+      const msg = document.getElementById('msg-modal-jurados');
+      msg.classList.add('hidden');
+
+      if (!url) {
+        msg.textContent = 'Pegue el enlace de Google Sheets de su base de jurados.';
+        msg.className = 'text-xs rounded-lg p-2.5 font-medium bg-red-50 text-red-700 border border-red-200';
+        msg.classList.remove('hidden');
+        return;
+      }
+
+      const btn = document.getElementById('btn-vincular-jurados');
+      btn.disabled = true;
+      btn.textContent = 'Vinculando...';
+
+      try {
+        const resp = await fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'configurar_jurados',
+            urlPlanilla: url,
+            auth: { clave: claveCoordActual }
+          })
+        });
+        const json = await resp.json();
+        if (!json.ok) throw new Error(json.error || 'No se pudo vincular la planilla.');
+
+        juradosConfig = json.juradosConfig;
+        listaJurados = json.jurados || [];
+        poblarSelectoresJurados();
+        renderListaJuradosModal();
+        document.getElementById('inp-url-jurados').value = '';
+
+        msg.textContent = `✓ Base de jurados vinculada (${listaJurados.length} evaluadores detectados).`;
+        msg.className = 'text-xs rounded-lg p-2.5 font-medium bg-emerald-50 text-emerald-800 border border-emerald-200';
+        msg.classList.remove('hidden');
+      } catch (err) {
+        msg.textContent = err.message;
+        msg.className = 'text-xs rounded-lg p-2.5 font-medium bg-red-50 text-red-700 border border-red-200';
+        msg.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Vincular Planilla';
+      }
+    }
+
+    async function activarRecordatoriosDiarios() {
+      const btn = document.getElementById('btn-activar-trigger');
+      const msg = document.getElementById('msg-modal-jurados');
+      btn.disabled = true;
+      btn.textContent = 'Activando...';
+
+      try {
+        const resp = await fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'activar_trigger_recordatorios',
+            auth: { clave: claveCoordActual }
+          })
+        });
+        const json = await resp.json();
+        if (!json.ok) throw new Error(json.error || 'No se pudo activar.');
+
+        msg.textContent = '✓ ' + json.mensaje;
+        msg.className = 'text-xs rounded-lg p-2.5 font-medium bg-emerald-50 text-emerald-800 border border-emerald-200';
+        msg.classList.remove('hidden');
+      } catch (err) {
+        msg.textContent = err.message;
+        msg.className = 'text-xs rounded-lg p-2.5 font-medium bg-red-50 text-red-700 border border-red-200';
+        msg.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '⏰ Activar alertas diarias';
+      }
     }
 
     // --- Modal Nuevo Apartado / Concurso ---
@@ -679,6 +1061,7 @@
           ? cfg.periodos
           : [{ id: '2026', nombre: 'Convocatoria 2026', descripcion: 'Período Activo', esBase: true }];
         requiereClaveServer = Boolean(cfg && cfg.requiereClave);
+        juradosConfig = cfg ? cfg.juradosConfig : null;
 
         if (!periodosDisponibles.some(p => p.id === periodoSeleccionado)) {
           periodoSeleccionado = periodosDisponibles[0].id;
@@ -725,6 +1108,9 @@
           p: auth.p || '',
           m: auth.m || '',
           nivel: auth.nivel || 'TODOS',
+          exp: auth.exp || '',
+          j: auth.j || '',
+          jn: auth.jn || '',
           t: auth.t || '',
           clave: auth.clave || ''
         });
@@ -738,11 +1124,13 @@
 
         if (!MODO_INDIVIDUAL && !MODO_MATERIA && claveCoordActual) {
           sessionStorage.setItem('elvs_clave_coord', claveCoordActual);
+          cargarListaJuradosServidor();
         }
 
         postulantes = json.data || [];
         if (postulantes.length > 0 && !postulantes.some(p => p.id === seleccionadoId)) {
           seleccionadoId = postulantes[0].id;
+          estadoSeleccionadoLocal = null;
         }
 
         const perInfo = periodosDisponibles.find(p => p.id === periodoSeleccionado);
@@ -853,80 +1241,148 @@
       document.body.removeChild(ta);
     }
 
-    function copiarEnlaceIndividual(id) {
-      const p = postulantes.find(item => item.id === id);
-      if (!p || !p.tokenIndividual) return;
-
-      const baseUrl = window.location.origin + window.location.pathname;
-      const enlace = `${baseUrl}?periodo=${encodeURIComponent(p.periodo)}&p=${encodeURIComponent(p.nivel + '-' + p.rowNumber)}&t=${encodeURIComponent(p.tokenIndividual)}`;
-
-      copiarTextoPortapapeles(enlace, () => {
-        const btn = document.getElementById('btn-copiar-link');
-        if (btn) {
-          btn.textContent = '✓ Enlace copiado';
-          btn.className = 'text-[11px] bg-emerald-600 text-white px-2.5 py-1 rounded font-semibold transition shrink-0';
-          setTimeout(() => {
-            if (document.getElementById('btn-copiar-link')) {
-              btn.textContent = '🔗 Copiar enlace individual';
-              btn.className = 'text-[11px] bg-blue-900 hover:bg-blue-800 text-white px-2.5 py-1 rounded font-semibold transition shrink-0';
-            }
-          }, 2500);
-        }
-      });
-    }
-
-    async function copiarEnlaceMateria() {
+    // --- Asignación y Envío de Enlaces (Materia e Individual) ---
+    async function ejecutarAsignacionMateria(enviarCorreo) {
       const materia = document.getElementById('filtro-materia').value;
       if (!materia) return;
 
       const nivel = filtroNivelActivo || 'TODOS';
-      const btn = document.getElementById('btn-copiar-link-materia');
-      btn.disabled = true;
-      btn.textContent = 'Generando enlace...';
+      const dias = parseInt(document.getElementById('inp-dias-materia').value, 10) || 10;
+      const idxJurado = document.getElementById('sel-jurado-materia').value;
+      const jurado = idxJurado !== '' ? listaJurados[parseInt(idxJurado, 10)] : null;
+
+      const msgEl = document.getElementById('msg-asig-materia');
+      const btnCopiar = document.getElementById('btn-copiar-link-materia');
+      const btnCorreo = document.getElementById('btn-enviar-link-materia');
+
+      msgEl.classList.add('hidden');
+      btnCopiar.disabled = true;
+      btnCorreo.disabled = true;
 
       try {
-        const query = new URLSearchParams({
-          action: 'token_materia',
-          periodo: periodoSeleccionado,
-          nivel: nivel,
-          m: materia,
-          clave: claveCoordActual
-        });
-        const resp = await fetch(`${API_URL}?${query.toString()}`);
-        const json = await resp.json();
-        if (!json.ok || !json.token) {
-          throw new Error(json.error || 'No se pudo generar el enlace');
-        }
-
         const baseUrl = window.location.origin + window.location.pathname;
-        const enlace = `${baseUrl}?periodo=${encodeURIComponent(periodoSeleccionado)}&nivel=${encodeURIComponent(nivel)}&m=${encodeURIComponent(materia)}&t=${encodeURIComponent(json.token)}`;
-
-        copiarTextoPortapapeles(enlace, () => {
-          btn.disabled = false;
-          btn.textContent = '✓ Enlace de materia copiado';
-          btn.className = 'w-full py-2 px-2.5 rounded-md bg-blue-900 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm';
-          setTimeout(() => {
-            actualizarBotonEnlaceMateria();
-          }, 2600);
+        const resp = await fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'generar_asignacion',
+            datos: {
+              tipo: 'materia',
+              periodo: periodoSeleccionado,
+              nivel: nivel,
+              materia: materia,
+              dias: dias,
+              juradoId: jurado ? jurado.id : '',
+              juradoNombre: jurado ? jurado.nombre : '',
+              juradoEmail: jurado ? jurado.email : '',
+              baseUrl: baseUrl,
+              enviarCorreo: enviarCorreo
+            },
+            auth: { clave: claveCoordActual }
+          })
         });
+        const json = await resp.json();
+        if (!json.ok) throw new Error(json.error || 'No se pudo generar el enlace.');
+
+        copiarTextoPortapapeles(json.enlace, () => {});
+        msgEl.textContent = enviarCorreo
+          ? `✓ Correo enviado a ${jurado.email} y enlace copiado (vence ${json.expTexto} hs).`
+          : `✓ Enlace copiado al portapapeles (vence ${json.expTexto} hs).`;
+        msgEl.className = 'text-[11px] font-semibold text-emerald-900 bg-emerald-100 border border-emerald-300 rounded p-1.5 text-center';
+        msgEl.classList.remove('hidden');
       } catch (err) {
-        btn.disabled = false;
-        btn.textContent = 'Error: ' + err.message;
+        msgEl.textContent = err.message;
+        msgEl.className = 'text-[11px] font-semibold text-red-700 bg-red-50 border border-red-200 rounded p-1.5 text-center';
+        msgEl.classList.remove('hidden');
+      } finally {
+        btnCopiar.disabled = false;
+        btnCorreo.disabled = false;
       }
     }
 
-    function actualizarBotonEnlaceMateria() {
-      const btn = document.getElementById('btn-copiar-link-materia');
-      if (!btn || MODO_MATERIA || MODO_INDIVIDUAL) return;
+    function abrirModalAsignarIndividual() {
+      const p = postulantes.find(item => item.id === seleccionadoId);
+      if (!p) return;
+
+      document.getElementById('titulo-modal-ind').textContent = `Asignar: ${p.nombre}`;
+      document.getElementById('inp-dias-individual').value = '10';
+      document.getElementById('msg-modal-individual').classList.add('hidden');
+      poblarSelectoresJurados();
+      document.getElementById('modal-asignar-individual').classList.remove('hidden');
+    }
+
+    function cerrarModalAsignarIndividual() {
+      document.getElementById('modal-asignar-individual').classList.add('hidden');
+    }
+
+    async function ejecutarAsignacionIndividual(enviarCorreo) {
+      const p = postulantes.find(item => item.id === seleccionadoId);
+      if (!p) return;
+
+      const dias = parseInt(document.getElementById('inp-dias-individual').value, 10) || 10;
+      const idxJurado = document.getElementById('sel-jurado-individual').value;
+      const jurado = idxJurado !== '' ? listaJurados[parseInt(idxJurado, 10)] : null;
+
+      const msgEl = document.getElementById('msg-modal-individual');
+      const btnCopiar = document.getElementById('btn-ind-copiar');
+      const btnCorreo = document.getElementById('btn-ind-correo');
+
+      msgEl.classList.add('hidden');
+      btnCopiar.disabled = true;
+      btnCorreo.disabled = true;
+
+      try {
+        const baseUrl = window.location.origin + window.location.pathname;
+        const resp = await fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'generar_asignacion',
+            datos: {
+              tipo: 'individual',
+              periodo: p.periodo,
+              nivel: p.nivel,
+              rowNumber: p.rowNumber,
+              dni: p.dni,
+              postulanteNombre: p.nombre,
+              dias: dias,
+              juradoId: jurado ? jurado.id : '',
+              juradoNombre: jurado ? jurado.nombre : '',
+              juradoEmail: jurado ? jurado.email : '',
+              baseUrl: baseUrl,
+              enviarCorreo: enviarCorreo
+            },
+            auth: { clave: claveCoordActual }
+          })
+        });
+        const json = await resp.json();
+        if (!json.ok) throw new Error(json.error || 'No se pudo generar el enlace.');
+
+        copiarTextoPortapapeles(json.enlace, () => {});
+        msgEl.textContent = enviarCorreo
+          ? `✓ Correo enviado a ${jurado.email} y enlace copiado (vence ${json.expTexto} hs).`
+          : `✓ Enlace individual copiado (vence ${json.expTexto} hs).`;
+        msgEl.className = 'text-xs rounded-lg p-2.5 font-medium bg-emerald-50 text-emerald-800 border border-emerald-200';
+        msgEl.classList.remove('hidden');
+      } catch (err) {
+        msgEl.textContent = err.message;
+        msgEl.className = 'text-xs rounded-lg p-2.5 font-medium bg-red-50 text-red-700 border border-red-200';
+        msgEl.classList.remove('hidden');
+      } finally {
+        btnCopiar.disabled = false;
+        btnCorreo.disabled = false;
+      }
+    }
+
+    function actualizarPanelEnlaceMateria() {
+      const panel = document.getElementById('panel-asignacion-materia');
+      const msgEl = document.getElementById('msg-asig-materia');
+      if (!panel || MODO_MATERIA || MODO_INDIVIDUAL) return;
       const materia = document.getElementById('filtro-materia').value;
       if (!materia) {
-        btn.classList.add('hidden');
+        panel.classList.add('hidden');
         return;
       }
-      const nivTxt = filtroNivelActivo ? ` · ${filtroNivelActivo}` : '';
-      btn.className = 'w-full py-2 px-2.5 rounded-md bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm';
-      btn.textContent = `🔗 Copiar enlace de esta materia${nivTxt}`;
-      btn.classList.remove('hidden');
+      if (msgEl) msgEl.classList.add('hidden');
+      panel.classList.remove('hidden');
     }
 
     function actualizarEstadisticas(listaBase) {
@@ -963,7 +1419,7 @@
       if (Object.keys(conteo).includes(valorPrevio)) {
         select.value = valorPrevio;
       }
-      actualizarBotonEnlaceMateria();
+      actualizarPanelEnlaceMateria();
     }
 
     function aplicarFiltros() {
@@ -981,7 +1437,7 @@
         : postulantes;
 
       actualizarEstadisticas(baseNivel);
-      actualizarBotonEnlaceMateria();
+      actualizarPanelEnlaceMateria();
 
       filtrados = baseNivel.filter(p => {
         const matchTexto = !q ||
@@ -1001,6 +1457,7 @@
 
       if (filtrados.length > 0 && !filtrados.some(p => p.id === seleccionadoId)) {
         seleccionadoId = filtrados[0].id;
+        estadoSeleccionadoLocal = null;
       }
       renderLista();
       renderDetalle();
@@ -1051,6 +1508,7 @@
 
     function seleccionarPostulante(id) {
       seleccionadoId = id;
+      estadoSeleccionadoLocal = null;
       renderLista();
       renderDetalle();
       if (window.innerWidth < 1024) {
@@ -1063,29 +1521,27 @@
       const idx = filtrados.findIndex(p => p.id === seleccionadoId);
       const nuevoIdx = (idx + delta + filtrados.length) % filtrados.length;
       seleccionadoId = filtrados[nuevoIdx].id;
+      estadoSeleccionadoLocal = null;
       renderLista();
       renderDetalle();
     }
 
-    function setEstadoLocal(id, nuevoEstado) {
-      const p = postulantes.find(item => item.id === id);
-      if (p) {
-        const obsActual = document.getElementById('inp-obs');
-        if (obsActual) p.evaluacion.obs = obsActual.value;
-        p.evaluacion.estado = nuevoEstado;
-        renderDetalle();
-      }
+    function setEstadoLocal(nuevoEstado) {
+      const borradorObs = document.getElementById('inp-obs') ? document.getElementById('inp-obs').value : '';
+      estadoSeleccionadoLocal = nuevoEstado;
+      renderDetalle(borradorObs);
     }
 
     async function guardarEnPlanilla(id) {
       const p = postulantes.find(item => item.id === id);
       if (!p) return;
 
-      p.evaluacion.obs = document.getElementById('inp-obs').value;
+      const nuevaObs = document.getElementById('inp-obs').value;
+      const estadoAEnviar = estadoSeleccionadoLocal || p.evaluacion.estado || 'Pendiente';
 
       const btn = document.getElementById('btn-guardar-eval');
       btn.disabled = true;
-      btn.textContent = 'Guardando en Google Sheets...';
+      btn.textContent = 'Guardando dictamen en Google Sheets...';
 
       try {
         const resp = await fetch(API_URL, {
@@ -1095,8 +1551,8 @@
             sheetId: p.sheetId,
             rowNumber: p.rowNumber,
             evalData: {
-              estado: p.evaluacion.estado,
-              obs: p.evaluacion.obs
+              estado: estadoAEnviar,
+              obs: nuevaObs
             },
             auth: getAuthPayload()
           })
@@ -1104,9 +1560,11 @@
         const json = await resp.json();
         if (!json.ok) throw new Error(json.error || 'Error al guardar');
 
-        btn.disabled = false;
-        btn.textContent = `✓ Guardado en planilla ${p.nivel}`;
-        btn.className = 'w-full py-2.5 rounded font-bold text-xs bg-emerald-600 text-white transition';
+        p.evaluacion.estado = json.estadoFinal || estadoAEnviar;
+        p.evaluacion.obs = json.obsActualizada || p.evaluacion.obs;
+        estadoSeleccionadoLocal = null;
+
+        renderDetalle('');
         if (!MODO_INDIVIDUAL) {
           const baseNivel = (!MODO_MATERIA && filtroNivelActivo)
             ? postulantes.filter(item => item.nivel === filtroNivelActivo)
@@ -1114,12 +1572,18 @@
           actualizarEstadisticas(baseNivel);
           renderLista();
         }
-        setTimeout(() => {
-          if (document.getElementById('btn-guardar-eval')) {
-            btn.textContent = 'Guardar Evaluación en Planilla';
-            btn.className = 'w-full py-2.5 rounded font-bold text-xs bg-blue-900 hover:bg-blue-800 text-white transition';
-          }
-        }, 2200);
+
+        const btnNuevo = document.getElementById('btn-guardar-eval');
+        if (btnNuevo) {
+          btnNuevo.textContent = `✓ Dictamen guardado (${p.evaluacion.estado})`;
+          btnNuevo.className = 'w-full py-2.5 rounded font-bold text-xs bg-emerald-600 text-white transition';
+          setTimeout(() => {
+            if (document.getElementById('btn-guardar-eval')) {
+              btnNuevo.textContent = 'Guardar Mi Dictamen en Planilla';
+              btnNuevo.className = 'w-full py-2.5 rounded font-bold text-xs bg-blue-900 hover:bg-blue-800 text-white transition';
+            }
+          }, 2400);
+        }
       } catch (err) {
         btn.disabled = false;
         btn.textContent = 'Error: ' + err.message;
@@ -1127,7 +1591,7 @@
       }
     }
 
-    function renderDetalle() {
+    function renderDetalle(borradorObsPreservado) {
       const p = postulantes.find(item => item.id === seleccionadoId);
       const cont = document.getElementById('detalle-postulante');
       const posIdx = filtrados.findIndex(item => item.id === seleccionadoId);
@@ -1142,6 +1606,7 @@
       }
 
       const ev = p.evaluacion;
+      const estadoBotones = estadoSeleccionadoLocal || ev.estado || 'Pendiente';
       const docsList = p.docs || [];
       const docsCargados = docsList.filter(d => d.fileId).length;
       const mobDocs = document.getElementById('mob-cnt-docs');
@@ -1158,6 +1623,10 @@
 
       const htmlTelefono = construirHtmlTelefono(p.telefono);
       const htmlCorreo = construirHtmlCorreo(p.email, p.nombre);
+      const htmlHistorial = renderHistorialObservaciones(ev.obs);
+      const evaluadorActualTxt = (MODO_INDIVIDUAL || MODO_MATERIA)
+        ? (PARAM_JN || 'Jurado Evaluador')
+        : 'Coordinación / Concursos';
 
       cont.innerHTML = `
         <div class="border-b border-slate-200 pb-3">
@@ -1198,8 +1667,8 @@
           <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Datos Personales del Docente</h3>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
             <div><span class="text-slate-400 block text-[11px]">D.N.I.</span><span class="font-bold">${escapeHtml(p.dni)}</span></div>
-            <div><span class="text-slate-400 block text-[11px]">Edad</span><span class="font-semibold">${escapeHtml(p.edad)} años</span></div>
-            <div class="sm:col-span-2"><span class="text-slate-400 block text-[11px]">Domicilio</span><span class="font-medium">${escapeHtml(p.domicilio)}</span></div>
+            <div><span class="text-slate-400 block text-[11px]">Edad</span><span class="font-semibold">${p.edad ? escapeHtml(p.edad) + ' años' : '<span class="text-slate-400 font-normal">No informada</span>'}</span></div>
+            <div class="sm:col-span-2"><span class="text-slate-400 block text-[11px]">Domicilio</span><span class="font-medium">${p.domicilio ? escapeHtml(p.domicilio) : '<span class="text-slate-400 font-normal">No informado</span>'}</span></div>
             <div>
               <span class="text-slate-400 block text-[11px]">Teléfono</span>
               ${htmlTelefono}
@@ -1211,35 +1680,54 @@
           </div>
         </div>
 
-        <!-- Evaluación de Comisión -->
+        <!-- Evaluación Acumulativa de Comisión / Tribunal -->
         <div class="bg-blue-50/70 rounded-lg p-3 border border-blue-200 space-y-3">
-          <h3 class="text-[11px] font-bold uppercase tracking-wider text-blue-900">Evaluación de Comisión</h3>
-
-          <div class="grid grid-cols-3 gap-2 text-xs">
-            <button onclick="setEstadoLocal(${p.id}, 'Pendiente')"
-              class="py-2 rounded font-semibold border transition ${ev.estado === 'Pendiente' ? 'bg-slate-700 text-white border-slate-700' : 'bg-white text-slate-600 border-slate-300'}">
-              Pendiente
-            </button>
-            <button onclick="setEstadoLocal(${p.id}, 'Evaluado')"
-              class="py-2 rounded font-semibold border transition ${ev.estado === 'Evaluado' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-emerald-700 border-slate-300'}">
-              ✓ Evaluado
-            </button>
-            <button onclick="setEstadoLocal(${p.id}, 'Observado')"
-              class="py-2 rounded font-semibold border transition ${ev.estado === 'Observado' ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-amber-700 border-slate-300'}">
-              ! Observado
-            </button>
+          <div class="flex items-center justify-between gap-2 flex-wrap">
+            <h3 class="text-[11px] font-bold uppercase tracking-wider text-blue-900">Evaluación del Tribunal</h3>
+            <span class="text-[10px] font-semibold bg-white px-2 py-0.5 rounded border border-blue-200 text-blue-900">
+              Estado actual: <strong>${escapeHtml(ev.estado)}</strong>
+            </span>
           </div>
 
-          <div>
-            <label class="text-[11px] text-slate-600 block mb-1">Observaciones de la Junta</label>
-            <textarea id="inp-obs" rows="3" placeholder="Ej: Título habilitante verificado..."
-              class="w-full px-2.5 py-2 border border-slate-300 rounded bg-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-600">${escapeHtml(ev.obs || '')}</textarea>
+          <!-- Bitácora de dictámenes previos (protegida contra sobrescritura) -->
+          <div class="space-y-1.5">
+            <span class="text-[11px] font-bold text-slate-600 block">Historial de dictámenes registrados</span>
+            <div class="space-y-1.5 max-h-40 overflow-y-auto pr-0.5">
+              ${htmlHistorial}
+            </div>
           </div>
 
-          <button id="btn-guardar-eval" onclick="guardarEnPlanilla(${p.id})"
-            class="w-full py-2.5 rounded font-bold text-xs bg-blue-900 hover:bg-blue-800 text-white transition">
-            Guardar Evaluación en Planilla
-          </button>
+          <div class="border-t border-blue-200/80 pt-2.5 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-bold text-blue-950">Nuevo dictamen (${escapeHtml(evaluadorActualTxt)})</span>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 text-xs">
+              <button onclick="setEstadoLocal('Pendiente')"
+                class="py-2 rounded font-semibold border transition ${estadoBotones === 'Pendiente' ? 'bg-slate-700 text-white border-slate-700' : 'bg-white text-slate-600 border-slate-300'}">
+                Pendiente
+              </button>
+              <button onclick="setEstadoLocal('Evaluado')"
+                class="py-2 rounded font-semibold border transition ${estadoBotones === 'Evaluado' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-emerald-700 border-slate-300'}">
+                ✓ Evaluado
+              </button>
+              <button onclick="setEstadoLocal('Observado')"
+                class="py-2 rounded font-semibold border transition ${estadoBotones === 'Observado' ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-amber-700 border-slate-300'}">
+                ! Observado
+              </button>
+            </div>
+
+            <div>
+              <label class="text-[11px] text-slate-600 block mb-1">Agregar observación / fundamento (se suma sin borrar las anteriores)</label>
+              <textarea id="inp-obs" rows="2" placeholder="Ej: Título habilitante verificado..."
+                class="w-full px-2.5 py-2 border border-slate-300 rounded bg-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-600">${escapeHtml(borradorObsPreservado || '')}</textarea>
+            </div>
+
+            <button id="btn-guardar-eval" onclick="guardarEnPlanilla(${p.id})"
+              class="w-full py-2.5 rounded font-bold text-xs bg-blue-900 hover:bg-blue-800 text-white transition">
+              Guardar Mi Dictamen en Planilla
+            </button>
+          </div>
         </div>
       `;
 
