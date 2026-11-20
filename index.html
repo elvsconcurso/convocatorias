@@ -35,7 +35,7 @@
           <h1 class="text-xs sm:text-sm md:text-base font-bold leading-tight truncate">
             Escuela y Liceo Vocacional Sarmiento — Evaluación Docente
           </h1>
-          <!-- Selector Rápido de Período/Concurso + Botón Crear Nuevo + Botón Jurados -->
+          <!-- Controles de Coordinación (se muestran SOLO tras validar la clave) -->
           <div id="controles-periodo-header" class="hidden items-center gap-1 flex-wrap">
             <select id="select-periodo-header" onchange="cambiarPeriodoDesdeHeader(this.value)"
               class="bg-amber-400 text-blue-950 font-extrabold text-[11px] md:text-xs px-2 py-0.5 rounded cursor-pointer border border-amber-300 focus:outline-none max-w-[180px]">
@@ -268,9 +268,9 @@
     </div>
   </div>
 
-  <!-- Modal Asignar Enlace Individual a Jurado (con vigencia en días y envío de correo) -->
+  <!-- Modal Asignar Enlace Individual a Jurados (multi-selección + buscador + vigencia) -->
   <div id="modal-asignar-individual" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-md w-full p-5 space-y-4 my-auto">
+    <div class="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-md w-full p-5 space-y-3.5 my-auto">
       <div class="flex items-start justify-between gap-2 border-b border-slate-200 pb-3">
         <div>
           <span class="text-[10px] font-bold uppercase tracking-wider text-blue-800 bg-blue-50 px-2 py-0.5 rounded-full">
@@ -281,16 +281,27 @@
         <button onclick="cerrarModalAsignarIndividual()" class="text-slate-400 hover:text-slate-700 font-bold text-lg leading-none px-1">✕</button>
       </div>
 
-      <div class="space-y-3 text-xs">
-        <div>
-          <label class="font-bold text-slate-700 block mb-1">Jurado Evaluador (firma el dictamen)</label>
-          <select id="sel-jurado-individual"
-            class="w-full px-2.5 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-600">
-            <option value="">Enlace genérico (sin jurado específico)</option>
-          </select>
+      <div class="space-y-2.5 text-xs">
+        <div class="flex items-center justify-between">
+          <label class="font-bold text-slate-700">Seleccionar Jurados (1 o más)</label>
+          <button type="button" onclick="limpiarSeleccionJurados('ind')" class="text-[11px] font-semibold text-slate-500 hover:text-red-600">
+            Limpiar selección
+          </button>
         </div>
 
-        <div>
+        <!-- Chips de jurados elegidos -->
+        <div id="chips-jurados-ind" class="flex flex-wrap gap-1 min-h-[24px]"></div>
+
+        <!-- Buscador de jurados -->
+        <input type="text" id="busq-jurado-ind" placeholder="Buscar jurado por nombre, DNI o área..."
+          oninput="renderChecklistJurados('ind')"
+          class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-600" />
+
+        <!-- Lista con checkboxes -->
+        <div id="lista-check-jurados-ind" class="max-h-40 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100 bg-slate-50">
+        </div>
+
+        <div class="pt-1">
           <label class="font-bold text-slate-700 block mb-1">Vigencia reglamentaria del enlace (en días)</label>
           <input type="number" id="inp-dias-individual" value="10" min="1" max="365"
             class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white font-bold focus:outline-none focus:ring-2 focus:ring-blue-600" />
@@ -302,11 +313,11 @@
         <div class="grid grid-cols-1 gap-2 pt-1">
           <button type="button" id="btn-ind-copiar" onclick="ejecutarAsignacionIndividual(false)"
             class="w-full py-2.5 px-3 rounded-lg bg-blue-900 hover:bg-blue-800 text-white font-bold transition">
-            🔗 Generar y copiar enlace
+            🔗 Generar y copiar enlace(s)
           </button>
           <button type="button" id="btn-ind-correo" onclick="ejecutarAsignacionIndividual(true)"
             class="w-full py-2.5 px-3 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-bold transition">
-            ✉️ Generar y enviar por correo al jurado
+            ✉️ Enviar enlace personal por correo
           </button>
         </div>
       </div>
@@ -334,19 +345,31 @@
             <option value="">Todas las materias / cargos</option>
           </select>
 
-          <!-- Panel de Asignación a Jurado por Materia / Cargo -->
+          <!-- Panel de Asignación a Jurados por Materia / Cargo (Multi-selección + Buscador) -->
           <div id="panel-asignacion-materia" class="hidden bg-emerald-50/90 border border-emerald-300 rounded-lg p-2.5 space-y-2">
             <div class="flex items-center justify-between">
-              <span class="text-[11px] font-extrabold text-emerald-950">Asignar Materia a Jurado</span>
-              <button type="button" onclick="abrirModalJurados()" class="text-[10px] font-bold text-blue-700 hover:underline">
-                + Nómina
-              </button>
+              <span class="text-[11px] font-extrabold text-emerald-950">Asignar Materia a Jurados</span>
+              <div class="flex items-center gap-2">
+                <button type="button" onclick="limpiarSeleccionJurados('mat')" class="text-[10px] font-semibold text-slate-500 hover:text-red-600">
+                  Limpiar
+                </button>
+                <button type="button" onclick="abrirModalJurados()" class="text-[10px] font-bold text-blue-700 hover:underline">
+                  + Nómina
+                </button>
+              </div>
             </div>
 
-            <select id="sel-jurado-materia"
-              class="w-full text-xs px-2 py-1.5 border border-emerald-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600">
-              <option value="">Jurado: Genérico (sin nombre)</option>
-            </select>
+            <!-- Chips de jurados seleccionados -->
+            <div id="chips-jurados-mat" class="flex flex-wrap gap-1"></div>
+
+            <!-- Buscador rápido de jurados -->
+            <input type="text" id="busq-jurado-mat" placeholder="Buscar jurado por nombre, DNI o área..."
+              oninput="renderChecklistJurados('mat')"
+              class="w-full text-xs px-2.5 py-1.5 border border-emerald-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600" />
+
+            <!-- Lista con checkboxes -->
+            <div id="lista-check-jurados-mat" class="max-h-32 overflow-y-auto border border-emerald-200 rounded bg-white divide-y divide-slate-100">
+            </div>
 
             <div class="flex items-center gap-2">
               <label class="text-[11px] font-semibold text-slate-700 shrink-0">Vigencia (días):</label>
@@ -358,11 +381,11 @@
             <div class="grid grid-cols-1 gap-1.5">
               <button id="btn-copiar-link-materia" onclick="ejecutarAsignacionMateria(false)"
                 class="w-full py-1.5 px-2.5 rounded-md bg-blue-900 hover:bg-blue-800 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
-                🔗 Copiar enlace de esta materia
+                🔗 Copiar enlace(s) de esta materia
               </button>
               <button id="btn-enviar-link-materia" onclick="ejecutarAsignacionMateria(true)"
                 class="w-full py-1.5 px-2.5 rounded-md bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
-                ✉️ Enviar enlace por correo al jurado
+                ✉️ Enviar enlace personal por correo
               </button>
             </div>
             <p id="msg-asig-materia" class="hidden text-[11px] font-semibold text-center"></p>
@@ -441,7 +464,7 @@
 
   <script>
     // PEGUE AQUÍ LA URL DE SU APLICACIÓN WEB DE GOOGLE APPS SCRIPT (terminada en /exec, sin /u/1/)
-    const API_URL = 'https://script.google.com/macros/s/AKfycbz60vq4DQO0qsrQ2A_gk_Ql1pGhHB0v-8juO_Tq6s_Xb_ZAyecy_UBFFZZOu9hzjEbGKw/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbz60vq4DQO0qsrQ2A_gk_Ql1pGhHB0v-8juO_Tq6s_Xb_ZAyecy_UBFFZZOu9hzjEbGKw/exec'';
 
     const urlParams = new URLSearchParams(window.location.search);
     const PARAM_PERIODO = urlParams.get('periodo') || '';
@@ -469,6 +492,8 @@
 
     let juradosConfig = null;
     let listaJurados = [];
+    let juradosSeleccionadosMat = new Set();
+    let juradosSeleccionadosInd = new Set();
 
     let postulantes = [];
     let filtrados = [];
@@ -731,7 +756,7 @@
       cargarDatos(false);
     }
 
-    // --- Gestión de Base de Datos de Jurados ---
+    // --- Gestión y Selección Múltiple de Jurados ---
     async function cargarListaJuradosServidor() {
       if (!claveCoordActual && requiereClaveServer) return;
       try {
@@ -741,24 +766,97 @@
         if (json && json.ok) {
           juradosConfig = json.juradosConfig;
           listaJurados = json.jurados || [];
-          poblarSelectoresJurados();
+          renderChecklistJurados('mat');
+          renderChecklistJurados('ind');
           renderListaJuradosModal();
         }
       } catch (e) {}
     }
 
-    function poblarSelectoresJurados() {
-      const opciones = ['<option value="">Jurado: Genérico (sin asignar)</option>'];
-      listaJurados.forEach((j, idx) => {
-        const esp = j.especialidad ? ` · ${j.especialidad}` : '';
-        const niv = j.nivel ? ` [${j.nivel}]` : '';
-        opciones.push(`<option value="${idx}">${escapeHtml(j.nombre)}${escapeHtml(niv)}${escapeHtml(esp)}</option>`);
-      });
+    function toggleSeleccionJurado(contexto, idx) {
+      const setObj = contexto === 'ind' ? juradosSeleccionadosInd : juradosSeleccionadosMat;
+      if (setObj.has(idx)) {
+        setObj.delete(idx);
+      } else {
+        setObj.add(idx);
+      }
+      renderChecklistJurados(contexto);
+    }
 
-      const selMat = document.getElementById('sel-jurado-materia');
-      const selInd = document.getElementById('sel-jurado-individual');
-      if (selMat) selMat.innerHTML = opciones.join('');
-      if (selInd) selInd.innerHTML = opciones.join('');
+    function limpiarSeleccionJurados(contexto) {
+      const setObj = contexto === 'ind' ? juradosSeleccionadosInd : juradosSeleccionadosMat;
+      setObj.clear();
+      const inpBusq = document.getElementById(contexto === 'ind' ? 'busq-jurado-ind' : 'busq-jurado-mat');
+      if (inpBusq) inpBusq.value = '';
+      renderChecklistJurados(contexto);
+    }
+
+    function renderChecklistJurados(contexto) {
+      const setObj = contexto === 'ind' ? juradosSeleccionadosInd : juradosSeleccionadosMat;
+      const chipsCont = document.getElementById(contexto === 'ind' ? 'chips-jurados-ind' : 'chips-jurados-mat');
+      const listCont = document.getElementById(contexto === 'ind' ? 'lista-check-jurados-ind' : 'lista-check-jurados-mat');
+      const inpBusq = document.getElementById(contexto === 'ind' ? 'busq-jurado-ind' : 'busq-jurado-mat');
+
+      if (!chipsCont || !listCont) return;
+
+      // Render chips seleccionados
+      if (setObj.size === 0) {
+        chipsCont.innerHTML = '<span class="text-[10px] text-slate-500 italic">Ningún jurado tildado (se generará enlace genérico)</span>';
+      } else {
+        const chipsHtml = [];
+        setObj.forEach(idx => {
+          const j = listaJurados[idx];
+          if (!j) return;
+          chipsHtml.push(`
+            <span class="inline-flex items-center gap-1 bg-blue-900 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
+              <span>${escapeHtml(j.nombre)}</span>
+              <button type="button" onclick="toggleSeleccionJurado('${contexto}', ${idx})" class="hover:text-amber-300 font-bold leading-none">✕</button>
+            </span>
+          `);
+        });
+        chipsCont.innerHTML = chipsHtml.join('');
+      }
+
+      if (listaJurados.length === 0) {
+        listCont.innerHTML = '<div class="p-2.5 text-[11px] text-slate-400 text-center">No hay jurados cargados. Haga clic en "+ Nómina" o "👥 Jurados" para vincular la planilla.</div>';
+        return;
+      }
+
+      const q = (inpBusq ? inpBusq.value : '').toLowerCase().trim();
+      const filtradosJur = listaJurados
+        .map((j, idx) => ({ j, idx }))
+        .filter(({ j }) => {
+          if (!q) return true;
+          return j.nombre.toLowerCase().includes(q) ||
+                 j.dni.toLowerCase().includes(q) ||
+                 j.especialidad.toLowerCase().includes(q) ||
+                 j.nivel.toLowerCase().includes(q);
+        });
+
+      if (filtradosJur.length === 0) {
+        listCont.innerHTML = '<div class="p-2 text-[11px] text-slate-400 text-center">Sin coincidencias para esa búsqueda.</div>';
+        return;
+      }
+
+      listCont.innerHTML = filtradosJur.map(({ j, idx }) => {
+        const checked = setObj.has(idx);
+        return `
+          <label class="flex items-start gap-2 px-2.5 py-1.5 cursor-pointer hover:bg-blue-50/70 transition ${checked ? 'bg-blue-50/90' : ''}">
+            <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleSeleccionJurado('${contexto}', ${idx})"
+              class="mt-0.5 rounded border-slate-300 text-blue-900 focus:ring-blue-600 cursor-pointer" />
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center justify-between gap-1">
+                <span class="text-[11px] font-bold text-slate-800 truncate">${escapeHtml(j.nombre)}</span>
+                ${j.nivel ? `<span class="text-[9px] bg-slate-100 border border-slate-200 px-1 rounded text-slate-600 shrink-0">${escapeHtml(j.nivel)}</span>` : ''}
+              </div>
+              <p class="text-[10px] text-slate-500 truncate">
+                ${j.email ? `✉️ ${escapeHtml(j.email)}` : '<span class="text-amber-600">Sin correo</span>'}
+                ${j.especialidad ? ` · ${escapeHtml(j.especialidad)}` : ''}
+              </p>
+            </div>
+          </label>
+        `;
+      }).join('');
     }
 
     function renderListaJuradosModal() {
@@ -838,7 +936,10 @@
 
         juradosConfig = json.juradosConfig;
         listaJurados = json.jurados || [];
-        poblarSelectoresJurados();
+        juradosSeleccionadosMat.clear();
+        juradosSeleccionadosInd.clear();
+        renderChecklistJurados('mat');
+        renderChecklistJurados('ind');
         renderListaJuradosModal();
         document.getElementById('inp-url-jurados').value = '';
 
@@ -1068,15 +1169,13 @@
         }
 
         renderSelectorPeriodosLogin();
-        const ctrlHeader = document.getElementById('controles-periodo-header');
-        ctrlHeader.classList.remove('hidden');
-        ctrlHeader.classList.add('flex');
 
         if (!requiereClaveServer) {
           document.getElementById('bloque-clave-login').classList.add('hidden');
         }
 
-        if (!claveCoordActual) {
+        // Si requiere clave y aún no fue validada, los botones de Nuevo, Jurados y Convocatoria permanecen ocultos
+        if (requiereClaveServer && !claveCoordActual) {
           document.getElementById('pantalla-carga').classList.add('hidden');
           document.getElementById('pantalla-login').classList.remove('hidden');
           document.getElementById('subtitulo-convocatoria').textContent = 'Seleccione o cree un apartado de inscripción';
@@ -1122,8 +1221,16 @@
           throw new Error(json.error || 'No se pudo obtener la información.');
         }
 
-        if (!MODO_INDIVIDUAL && !MODO_MATERIA && claveCoordActual) {
-          sessionStorage.setItem('elvs_clave_coord', claveCoordActual);
+        // Clave validada correctamente: mostramos controles administrativos del header
+        if (!MODO_INDIVIDUAL && !MODO_MATERIA) {
+          if (claveCoordActual) {
+            sessionStorage.setItem('elvs_clave_coord', claveCoordActual);
+          }
+          const ctrlHeader = document.getElementById('controles-periodo-header');
+          if (ctrlHeader) {
+            ctrlHeader.classList.remove('hidden');
+            ctrlHeader.classList.add('flex');
+          }
           cargarListaJuradosServidor();
         }
 
@@ -1166,6 +1273,11 @@
         if (msg.includes('CLAVE_INVALIDA')) {
           sessionStorage.removeItem('elvs_clave_coord');
           claveCoordActual = '';
+          const ctrlHeader = document.getElementById('controles-periodo-header');
+          if (ctrlHeader) {
+            ctrlHeader.classList.add('hidden');
+            ctrlHeader.classList.remove('flex');
+          }
           document.getElementById('pantalla-carga').classList.add('hidden');
           document.getElementById('pantalla-login').classList.remove('hidden');
           document.getElementById('msg-error-clave').classList.remove('hidden');
@@ -1241,15 +1353,32 @@
       document.body.removeChild(ta);
     }
 
-    // --- Asignación y Envío de Enlaces (Materia e Individual) ---
+    function obtenerArrayJuradosSeleccionados(contexto) {
+      const setObj = contexto === 'ind' ? juradosSeleccionadosInd : juradosSeleccionadosMat;
+      const seleccionados = [];
+      setObj.forEach(idx => {
+        const j = listaJurados[idx];
+        if (j) {
+          seleccionados.push({ id: j.id, nombre: j.nombre, email: j.email });
+        }
+      });
+      return seleccionados;
+    }
+
+    function formatearTextoEnlacesCopiados(enlaces) {
+      if (!enlaces || enlaces.length === 0) return '';
+      if (enlaces.length === 1) return enlaces[0].enlace;
+      return enlaces.map(item => `${item.juradoNombre}:\n${item.enlace}`).join('\n\n');
+    }
+
+    // --- Asignación y Envío de Enlaces (Materia e Individual con Multi-Jurado) ---
     async function ejecutarAsignacionMateria(enviarCorreo) {
       const materia = document.getElementById('filtro-materia').value;
       if (!materia) return;
 
       const nivel = filtroNivelActivo || 'TODOS';
       const dias = parseInt(document.getElementById('inp-dias-materia').value, 10) || 10;
-      const idxJurado = document.getElementById('sel-jurado-materia').value;
-      const jurado = idxJurado !== '' ? listaJurados[parseInt(idxJurado, 10)] : null;
+      const juradosElegidos = obtenerArrayJuradosSeleccionados('mat');
 
       const msgEl = document.getElementById('msg-asig-materia');
       const btnCopiar = document.getElementById('btn-copiar-link-materia');
@@ -1271,9 +1400,7 @@
               nivel: nivel,
               materia: materia,
               dias: dias,
-              juradoId: jurado ? jurado.id : '',
-              juradoNombre: jurado ? jurado.nombre : '',
-              juradoEmail: jurado ? jurado.email : '',
+              jurados: juradosElegidos,
               baseUrl: baseUrl,
               enviarCorreo: enviarCorreo
             },
@@ -1283,10 +1410,13 @@
         const json = await resp.json();
         if (!json.ok) throw new Error(json.error || 'No se pudo generar el enlace.');
 
-        copiarTextoPortapapeles(json.enlace, () => {});
+        const textoCopiar = formatearTextoEnlacesCopiados(json.enlaces);
+        copiarTextoPortapapeles(textoCopiar, () => {});
+
+        const cant = (json.enlaces || []).length;
         msgEl.textContent = enviarCorreo
-          ? `✓ Correo enviado a ${jurado.email} y enlace copiado (vence ${json.expTexto} hs).`
-          : `✓ Enlace copiado al portapapeles (vence ${json.expTexto} hs).`;
+          ? `✓ ${json.enviadosCount} correo(s) enviado(s) desde Concursos y enlace(s) copiados (vence ${json.expTexto} hs).`
+          : `✓ ${cant > 1 ? cant + ' enlaces personales copiados' : 'Enlace copiado'} al portapapeles (vence ${json.expTexto} hs).`;
         msgEl.className = 'text-[11px] font-semibold text-emerald-900 bg-emerald-100 border border-emerald-300 rounded p-1.5 text-center';
         msgEl.classList.remove('hidden');
       } catch (err) {
@@ -1306,7 +1436,7 @@
       document.getElementById('titulo-modal-ind').textContent = `Asignar: ${p.nombre}`;
       document.getElementById('inp-dias-individual').value = '10';
       document.getElementById('msg-modal-individual').classList.add('hidden');
-      poblarSelectoresJurados();
+      renderChecklistJurados('ind');
       document.getElementById('modal-asignar-individual').classList.remove('hidden');
     }
 
@@ -1319,8 +1449,7 @@
       if (!p) return;
 
       const dias = parseInt(document.getElementById('inp-dias-individual').value, 10) || 10;
-      const idxJurado = document.getElementById('sel-jurado-individual').value;
-      const jurado = idxJurado !== '' ? listaJurados[parseInt(idxJurado, 10)] : null;
+      const juradosElegidos = obtenerArrayJuradosSeleccionados('ind');
 
       const msgEl = document.getElementById('msg-modal-individual');
       const btnCopiar = document.getElementById('btn-ind-copiar');
@@ -1344,9 +1473,7 @@
               dni: p.dni,
               postulanteNombre: p.nombre,
               dias: dias,
-              juradoId: jurado ? jurado.id : '',
-              juradoNombre: jurado ? jurado.nombre : '',
-              juradoEmail: jurado ? jurado.email : '',
+              jurados: juradosElegidos,
               baseUrl: baseUrl,
               enviarCorreo: enviarCorreo
             },
@@ -1356,10 +1483,13 @@
         const json = await resp.json();
         if (!json.ok) throw new Error(json.error || 'No se pudo generar el enlace.');
 
-        copiarTextoPortapapeles(json.enlace, () => {});
+        const textoCopiar = formatearTextoEnlacesCopiados(json.enlaces);
+        copiarTextoPortapapeles(textoCopiar, () => {});
+
+        const cant = (json.enlaces || []).length;
         msgEl.textContent = enviarCorreo
-          ? `✓ Correo enviado a ${jurado.email} y enlace copiado (vence ${json.expTexto} hs).`
-          : `✓ Enlace individual copiado (vence ${json.expTexto} hs).`;
+          ? `✓ ${json.enviadosCount} correo(s) enviado(s) desde Concursos y enlace(s) copiados (vence ${json.expTexto} hs).`
+          : `✓ ${cant > 1 ? cant + ' enlaces individuales copiados' : 'Enlace individual copiado'} (vence ${json.expTexto} hs).`;
         msgEl.className = 'text-xs rounded-lg p-2.5 font-medium bg-emerald-50 text-emerald-800 border border-emerald-200';
         msgEl.classList.remove('hidden');
       } catch (err) {
@@ -1382,6 +1512,7 @@
         return;
       }
       if (msgEl) msgEl.classList.add('hidden');
+      renderChecklistJurados('mat');
       panel.classList.remove('hidden');
     }
 
