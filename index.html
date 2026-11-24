@@ -17,7 +17,6 @@
       height: 100vh !important;
     }
   </style>
-  <!-- Captura cualquier error de sintaxis o carga para evitar bloqueos silenciosos -->
   <script>
     window.addEventListener('error', function(e) {
       var el = document.getElementById('pantalla-carga');
@@ -51,7 +50,7 @@
           <!-- Controles de Coordinación (se muestran SOLO tras validar la clave) -->
           <div id="controles-periodo-header" class="hidden items-center gap-1 flex-wrap">
             <select id="select-periodo-header" onchange="cambiarPeriodoDesdeHeader(this.value)"
-              class="bg-amber-400 text-blue-950 font-extrabold text-[11px] md:text-xs px-2 py-0.5 rounded cursor-pointer border border-amber-300 focus:outline-none max-w-[180px]">
+              class="bg-amber-400 text-blue-950 font-extrabold text-[11px] md:text-xs px-2 py-0.5 rounded cursor-pointer border border-amber-300 focus:outline-none max-w-[170px]">
             </select>
             <button onclick="abrirModalNuevoPeriodo()" title="Vincular nueva planilla de inscripción de Drive"
               class="bg-emerald-500 hover:bg-emerald-400 text-blue-950 font-extrabold text-[11px] md:text-xs px-2 py-0.5 rounded transition shrink-0">
@@ -60,6 +59,10 @@
             <button onclick="abrirModalJurados()" title="Gestionar base de datos de jurados evaluadores y recordatorios"
               class="bg-sky-300 hover:bg-sky-200 text-blue-950 font-extrabold text-[11px] md:text-xs px-2 py-0.5 rounded transition shrink-0">
               👥 Jurados
+            </button>
+            <button onclick="abrirModalAsignacion('materia')" title="Asignar y enviar enlaces a jurados"
+              class="bg-white hover:bg-blue-100 text-blue-950 font-extrabold text-[11px] md:text-xs px-2 py-0.5 rounded transition shrink-0">
+              🔗 Enlaces
             </button>
           </div>
         </div>
@@ -97,7 +100,7 @@
     </div>
   </header>
 
-  <!-- Barra de Navegación para Celular y Tablet (< 1024px) -->
+  <!-- Barra de Navegación para Celular y Tablet -->
   <nav id="nav-movil" class="hidden lg:hidden bg-white border-b border-slate-300 sticky top-0 z-30 shadow-sm shrink-0">
     <div class="flex divide-x divide-slate-200 text-xs font-bold">
       <button id="mob-tab-padron" onclick="cambiarVistaMovil('padron')"
@@ -279,53 +282,102 @@
     </div>
   </div>
 
-  <!-- Modal Asignar Enlace Individual a Jurados -->
-  <div id="modal-asignar-individual" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-md w-full p-5 space-y-3.5 my-auto">
+  <!-- Centro Unificado de Asignación y Envío de Enlaces -->
+  <div id="modal-asignacion-unificado" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-lg w-full p-5 space-y-4 my-auto">
       <div class="flex items-start justify-between gap-2 border-b border-slate-200 pb-3">
         <div>
           <span class="text-[10px] font-bold uppercase tracking-wider text-blue-800 bg-blue-50 px-2 py-0.5 rounded-full">
-            Evaluación Individual
+            Centro de Asignación
           </span>
-          <h3 class="text-base font-extrabold text-slate-900 mt-1" id="titulo-modal-ind">Asignar Postulante</h3>
+          <h3 class="text-base font-extrabold text-slate-900 mt-1">Generar y Enviar Enlaces de Evaluación</h3>
         </div>
-        <button onclick="cerrarModalAsignarIndividual()" class="text-slate-400 hover:text-slate-700 font-bold text-lg leading-none px-1">✕</button>
+        <button onclick="cerrarModalAsignacion()" class="text-slate-400 hover:text-slate-700 font-bold text-lg leading-none px-1">✕</button>
       </div>
 
-      <div class="space-y-2.5 text-xs">
-        <div class="flex items-center justify-between">
-          <label class="font-bold text-slate-700">Seleccionar Jurados (1 o más)</label>
-          <button type="button" onclick="limpiarSeleccionJurados('ind')" class="text-[11px] font-semibold text-slate-500 hover:text-red-600">
-            Limpiar selección
+      <!-- Selector de Modo (Materia / Cargo vs Postulante Individual) -->
+      <div class="grid grid-cols-2 gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs">
+        <button type="button" id="tab-unif-materia" onclick="cambiarModoAsignacionUnificada('materia')"
+          class="py-2 px-3 rounded-md font-bold transition bg-blue-900 text-white shadow-xs">
+          📚 Por Materia / Cargo
+        </button>
+        <button type="button" id="tab-unif-individual" onclick="cambiarModoAsignacionUnificada('individual')"
+          class="py-2 px-3 rounded-md font-semibold transition text-slate-600 hover:bg-white">
+          👤 Postulante Individual
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <!-- Objetivo: Materia / Cargo -->
+        <div id="bloque-unif-materia" class="space-y-1">
+          <label class="font-bold text-slate-700 block">Materia o Cargo a evaluar *</label>
+          <select id="unif-select-materia"
+            class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white font-medium focus:outline-none focus:ring-2 focus:ring-blue-600">
+          </select>
+        </div>
+
+        <!-- Objetivo: Postulante Individual -->
+        <div id="bloque-unif-individual" class="hidden space-y-1">
+          <label class="font-bold text-slate-700 block">Postulante a evaluar *</label>
+          <select id="unif-select-postulante"
+            class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white font-medium focus:outline-none focus:ring-2 focus:ring-blue-600">
+          </select>
+        </div>
+
+        <!-- Buscador Compacto y Selección Múltiple de Jurados -->
+        <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <label class="font-bold text-slate-700">Jurados asignados (<span id="cnt-jurados-unif">0</span>)</label>
+            <div class="flex items-center gap-2.5">
+              <button type="button" onclick="limpiarSeleccionJurados()" class="text-[11px] font-semibold text-slate-500 hover:text-red-600">
+                Limpiar
+              </button>
+              <button type="button" onclick="cerrarModalAsignacion(); abrirModalJurados();" class="text-[11px] font-bold text-blue-700 hover:underline">
+                + Nómina
+              </button>
+            </div>
+          </div>
+
+          <div id="chips-jurados-unif" class="flex flex-wrap gap-1 min-h-[22px]"></div>
+
+          <div class="relative">
+            <input type="text" id="busq-jurado-unif" placeholder="Escribí apellido, DNI o área para buscar y tildar..."
+              oninput="renderResultadosBusqJurados()"
+              class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-600" />
+          </div>
+
+          <div id="resultados-busq-jurados" class="hidden max-h-40 overflow-y-auto border border-slate-200 rounded-lg bg-white divide-y divide-slate-100">
+          </div>
+
+          <div class="flex items-center justify-between text-[11px] text-slate-500">
+            <span id="hint-busq-jurados">Escribí para filtrar entre <strong id="total-jurados-disp">0</strong> jurados cargados.</span>
+            <button type="button" id="btn-toggle-todos-jurados" onclick="toggleMostrarTodosJurados()"
+              class="text-blue-700 hover:underline font-semibold">
+              Ver lista completa
+            </button>
+          </div>
+        </div>
+
+        <!-- Plazo Reglamentario -->
+        <div class="flex items-center justify-between bg-amber-50/70 border border-amber-200 rounded-lg px-3 py-2">
+          <div>
+            <span class="font-bold text-amber-950 block">Vigencia reglamentaria (días)</span>
+            <span class="text-[11px] text-amber-800">Plazo estándar: 10 días corridos desde el envío.</span>
+          </div>
+          <input type="number" id="inp-dias-unif" value="10" min="1" max="365"
+            class="w-20 px-2.5 py-1.5 border border-amber-300 rounded-lg bg-white font-extrabold text-center text-sm focus:outline-none focus:ring-2 focus:ring-blue-600" />
+        </div>
+
+        <p id="msg-modal-unif" class="hidden text-xs rounded-lg p-2.5 font-medium"></p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+          <button type="button" id="btn-unif-copiar" onclick="ejecutarAsignacionUnificada(false)"
+            class="w-full py-2.5 px-3 rounded-lg bg-blue-900 hover:bg-blue-800 text-white font-bold transition shadow-xs">
+            🔗 Copiar enlace(s)
           </button>
-        </div>
-
-        <div id="chips-jurados-ind" class="flex flex-wrap gap-1 min-h-[24px]"></div>
-
-        <input type="text" id="busq-jurado-ind" placeholder="Buscar jurado por nombre, DNI o área..."
-          oninput="renderChecklistJurados('ind')"
-          class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-600" />
-
-        <div id="lista-check-jurados-ind" class="max-h-40 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100 bg-slate-50">
-        </div>
-
-        <div class="pt-1">
-          <label class="font-bold text-slate-700 block mb-1">Vigencia reglamentaria del enlace (en días)</label>
-          <input type="number" id="inp-dias-individual" value="10" min="1" max="365"
-            class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white font-bold focus:outline-none focus:ring-2 focus:ring-blue-600" />
-          <p class="text-[11px] text-slate-500 mt-1">Por reglamento se establece un plazo de 10 días corridos desde su emisión.</p>
-        </div>
-
-        <p id="msg-modal-individual" class="hidden text-xs rounded-lg p-2.5 font-medium"></p>
-
-        <div class="grid grid-cols-1 gap-2 pt-1">
-          <button type="button" id="btn-ind-copiar" onclick="ejecutarAsignacionIndividual(false)"
-            class="w-full py-2.5 px-3 rounded-lg bg-blue-900 hover:bg-blue-800 text-white font-bold transition">
-            🔗 Generar y copiar enlace(s)
-          </button>
-          <button type="button" id="btn-ind-correo" onclick="ejecutarAsignacionIndividual(true)"
-            class="w-full py-2.5 px-3 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-bold transition">
-            ✉️ Enviar enlace personal por correo
+          <button type="button" id="btn-unif-correo" onclick="ejecutarAsignacionUnificada(true)"
+            class="w-full py-2.5 px-3 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-bold transition shadow-xs">
+            ✉️ Enviar por correo
           </button>
         </div>
       </div>
@@ -353,47 +405,10 @@
             <option value="">Todas las materias / cargos</option>
           </select>
 
-          <div id="panel-asignacion-materia" class="hidden bg-emerald-50/90 border border-emerald-300 rounded-lg p-2.5 space-y-2">
-            <div class="flex items-center justify-between">
-              <span class="text-[11px] font-extrabold text-emerald-950">Asignar Materia a Jurados</span>
-              <div class="flex items-center gap-2">
-                <button type="button" onclick="limpiarSeleccionJurados('mat')" class="text-[10px] font-semibold text-slate-500 hover:text-red-600">
-                  Limpiar
-                </button>
-                <button type="button" onclick="abrirModalJurados()" class="text-[10px] font-bold text-blue-700 hover:underline">
-                  + Nómina
-                </button>
-              </div>
-            </div>
-
-            <div id="chips-jurados-mat" class="flex flex-wrap gap-1"></div>
-
-            <input type="text" id="busq-jurado-mat" placeholder="Buscar jurado por nombre, DNI o área..."
-              oninput="renderChecklistJurados('mat')"
-              class="w-full text-xs px-2.5 py-1.5 border border-emerald-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600" />
-
-            <div id="lista-check-jurados-mat" class="max-h-32 overflow-y-auto border border-emerald-200 rounded bg-white divide-y divide-slate-100">
-            </div>
-
-            <div class="flex items-center gap-2">
-              <label class="text-[11px] font-semibold text-slate-700 shrink-0">Vigencia (días):</label>
-              <input type="number" id="inp-dias-materia" value="10" min="1" max="365"
-                class="w-16 text-xs px-2 py-1 border border-emerald-300 rounded bg-white font-bold text-center" />
-              <span class="text-[10px] text-slate-500 leading-tight">Plazo reglam.</span>
-            </div>
-
-            <div class="grid grid-cols-1 gap-1.5">
-              <button id="btn-copiar-link-materia" onclick="ejecutarAsignacionMateria(false)"
-                class="w-full py-1.5 px-2.5 rounded-md bg-blue-900 hover:bg-blue-800 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
-                🔗 Copiar enlace(s) de esta materia
-              </button>
-              <button id="btn-enviar-link-materia" onclick="ejecutarAsignacionMateria(true)"
-                class="w-full py-1.5 px-2.5 rounded-md bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
-                ✉️ Enviar enlace personal por correo
-              </button>
-            </div>
-            <p id="msg-asig-materia" class="hidden text-[11px] font-semibold text-center"></p>
-          </div>
+          <button id="btn-abrir-asig-materia" type="button" onclick="abrirModalAsignacion('materia')"
+            class="hidden w-full py-1.5 px-2.5 rounded-md bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-2xs">
+            🔗 Asignar / Enviar esta materia a jurados
+          </button>
         </div>
 
         <div class="flex gap-1">
@@ -430,7 +445,7 @@
             Sig. →
           </button>
         </div>
-        <button id="btn-copiar-link" onclick="abrirModalAsignarIndividual()"
+        <button id="btn-copiar-link" onclick="abrirModalAsignacion('individual')"
           class="text-[11px] bg-blue-900 hover:bg-blue-800 text-white px-2.5 py-1 rounded font-semibold transition shrink-0">
           🔗 Asignar enlace individual
         </button>
@@ -467,7 +482,7 @@
   </main>
 
   <script>
-    // PEGUE AQUÍ LA URL DE SU APLICACIÓN WEB DE GOOGLE APPS SCRIPT (terminada en /exec, sin /u/1/)
+    // PEGUE AQUÍ LA URL DE SU APLICACIÓN WEB DE GOOGLE APPS SCRIPT (terminada en /exec, sin /a/macros/...)
     const API_URL = 'https://script.google.com/macros/s/AKfycbz60vq4DQO0qsrQ2A_gk_Ql1pGhHB0v-8juO_Tq6s_Xb_ZAyecy_UBFFZZOu9hzjEbGKw/exec';
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -496,8 +511,9 @@
 
     let juradosConfig = null;
     let listaJurados = [];
-    let juradosSeleccionadosMat = new Set();
-    let juradosSeleccionadosInd = new Set();
+    let juradosSeleccionados = new Set();
+    let modoAsignacionUnificada = 'materia';
+    let mostrarTodosJurados = false;
 
     let postulantes = [];
     let filtrados = [];
@@ -519,16 +535,22 @@
         .replace(/'/g, '&#39;');
     }
 
+    async function fetchConTimeout(url, options, timeoutMs) {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeoutMs || 45000);
+      try {
+        return await fetch(url, Object.assign({ redirect: 'follow' }, options || {}, { signal: controller.signal }));
+      } finally {
+        clearTimeout(id);
+      }
+    }
+
     function construirHtmlTelefono(rawTel) {
       const texto = String(rawTel || '').trim();
-      if (!texto) {
-        return '<span class="text-slate-400">No informado</span>';
-      }
+      if (!texto) return '<span class="text-slate-400">No informado</span>';
       const primerNumero = texto.split(/[\/,;]/)[0].trim();
       const telHref = primerNumero.replace(/[^\d+]/g, '');
-      if (!telHref) {
-        return `<span class="font-medium text-slate-700">${escapeHtml(texto)}</span>`;
-      }
+      if (!telHref) return `<span class="font-medium text-slate-700">${escapeHtml(texto)}</span>`;
       return `
         <a href="tel:${escapeHtml(telHref)}"
            title="Llamar al ${escapeHtml(primerNumero)}"
@@ -540,9 +562,7 @@
 
     function construirHtmlCorreo(rawEmail, nombreDocente) {
       const correo = String(rawEmail || '').trim();
-      if (!correo) {
-        return '<span class="text-slate-400">No informado</span>';
-      }
+      if (!correo) return '<span class="text-slate-400">No informado</span>';
       const correoHref = correo.replace(/["<>\\s]/g, '');
       const asunto = encodeURIComponent(`Escuela y Liceo Vocacional Sarmiento — Convocatoria Docente (${nombreDocente || ''})`);
       return `
@@ -566,17 +586,9 @@
       return lineas.map(linea => {
         const m = linea.match(regexEntrada);
         if (!m) {
-          return `
-            <div class="bg-white border border-slate-200 rounded p-2 text-[11px] text-slate-700">
-              ${escapeHtml(linea)}
-            </div>
-          `;
+          return `<div class="bg-white border border-slate-200 rounded p-2 text-[11px] text-slate-700">${escapeHtml(linea)}</div>`;
         }
-        const fecha = m[1];
-        const autor = m[2];
-        const est = m[3];
-        const detalle = m[4];
-
+        const fecha = m[1], autor = m[2], est = m[3], detalle = m[4];
         const badgeCls = est === 'Evaluado'
           ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
           : est === 'Observado'
@@ -600,43 +612,22 @@
 
     function getAuthPayload() {
       if (MODO_INDIVIDUAL) {
-        return {
-          periodo: periodoSeleccionado,
-          modo: 'individual',
-          p: PARAM_P,
-          exp: PARAM_EXP,
-          j: PARAM_J,
-          jn: PARAM_JN,
-          t: PARAM_T
-        };
+        return { periodo: periodoSeleccionado, modo: 'individual', p: PARAM_P, exp: PARAM_EXP, j: PARAM_J, jn: PARAM_JN, t: PARAM_T };
       }
       if (MODO_MATERIA) {
-        return {
-          periodo: periodoSeleccionado,
-          modo: 'materia',
-          m: PARAM_M,
-          nivel: PARAM_NIVEL,
-          exp: PARAM_EXP,
-          j: PARAM_J,
-          jn: PARAM_JN,
-          t: PARAM_T
-        };
+        return { periodo: periodoSeleccionado, modo: 'materia', m: PARAM_M, nivel: PARAM_NIVEL, exp: PARAM_EXP, j: PARAM_J, jn: PARAM_JN, t: PARAM_T };
       }
       return { periodo: periodoSeleccionado, modo: 'general', clave: claveCoordActual };
     }
 
     function cambiarVistaMovil(vista) {
       vistaMovilActiva = vista;
-
-      const tabs = ['padron', 'ficha', 'visor'];
-      tabs.forEach(t => {
+      ['padron', 'ficha', 'visor'].forEach(t => {
         const btn = document.getElementById('mob-tab-' + t);
         if (!btn) return;
-        if (t === vista) {
-          btn.className = 'flex-1 py-2.5 px-2 text-center transition border-b-2 border-blue-900 text-blue-950 bg-blue-50/70';
-        } else {
-          btn.className = 'flex-1 py-2.5 px-2 text-center transition border-b-2 border-transparent text-slate-600 hover:bg-slate-50';
-        }
+        btn.className = t === vista
+          ? 'flex-1 py-2.5 px-2 text-center transition border-b-2 border-blue-900 text-blue-950 bg-blue-50/70'
+          : 'flex-1 py-2.5 px-2 text-center transition border-b-2 border-transparent text-slate-600 hover:bg-slate-50';
       });
 
       const colPadron = document.getElementById('col-padron');
@@ -653,9 +644,7 @@
         panelVisor.className = `${vista === 'visor' ? 'flex' : 'hidden'} lg:flex lg:col-span-5 bg-slate-800 flex-col min-h-[calc(100vh-96px)] lg:min-h-0 lg:h-full lg:overflow-hidden`;
       }
 
-      if (window.innerWidth < 1024) {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
+      if (window.innerWidth < 1024) window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function configurarInterfazSegunModo() {
@@ -700,7 +689,7 @@
       if (escudoIntentado || API_URL.startsWith('PEGAR_AQUI')) return;
       escudoIntentado = true;
       try {
-        const resp = await fetch(`${API_URL}?action=escudo`);
+        const resp = await fetchConTimeout(`${API_URL}?action=escudo`, {}, 20000);
         const json = await resp.json();
         if (json && json.ok && json.dataUrl) {
           imgEl.src = json.dataUrl;
@@ -764,68 +753,93 @@
       if (!claveCoordActual && requiereClaveServer) return;
       try {
         const query = new URLSearchParams({ action: 'jurados', clave: claveCoordActual });
-        const resp = await fetch(`${API_URL}?${query.toString()}`);
+        const resp = await fetchConTimeout(`${API_URL}?${query.toString()}`, {}, 30000);
         const json = await resp.json();
         if (json && json.ok) {
           juradosConfig = json.juradosConfig;
           listaJurados = json.jurados || [];
-          renderChecklistJurados('mat');
-          renderChecklistJurados('ind');
+          renderChipsJuradosUnif();
+          renderResultadosBusqJurados();
           renderListaJuradosModal();
         }
       } catch (e) {}
     }
 
-    function toggleSeleccionJurado(contexto, idx) {
-      const setObj = contexto === 'ind' ? juradosSeleccionadosInd : juradosSeleccionadosMat;
-      if (setObj.has(idx)) {
-        setObj.delete(idx);
+    function toggleSeleccionJurado(idx) {
+      if (juradosSeleccionados.has(idx)) {
+        juradosSeleccionados.delete(idx);
       } else {
-        setObj.add(idx);
+        juradosSeleccionados.add(idx);
       }
-      renderChecklistJurados(contexto);
+      renderChipsJuradosUnif();
+      renderResultadosBusqJurados();
     }
 
-    function limpiarSeleccionJurados(contexto) {
-      const setObj = contexto === 'ind' ? juradosSeleccionadosInd : juradosSeleccionadosMat;
-      setObj.clear();
-      const inpBusq = document.getElementById(contexto === 'ind' ? 'busq-jurado-ind' : 'busq-jurado-mat');
-      if (inpBusq) inpBusq.value = '';
-      renderChecklistJurados(contexto);
+    function limpiarSeleccionJurados() {
+      juradosSeleccionados.clear();
+      mostrarTodosJurados = false;
+      const inp = document.getElementById('busq-jurado-unif');
+      if (inp) inp.value = '';
+      renderChipsJuradosUnif();
+      renderResultadosBusqJurados();
     }
 
-    function renderChecklistJurados(contexto) {
-      const setObj = contexto === 'ind' ? juradosSeleccionadosInd : juradosSeleccionadosMat;
-      const chipsCont = document.getElementById(contexto === 'ind' ? 'chips-jurados-ind' : 'chips-jurados-mat');
-      const listCont = document.getElementById(contexto === 'ind' ? 'lista-check-jurados-ind' : 'lista-check-jurados-mat');
-      const inpBusq = document.getElementById(contexto === 'ind' ? 'busq-jurado-ind' : 'busq-jurado-mat');
+    function toggleMostrarTodosJurados() {
+      mostrarTodosJurados = !mostrarTodosJurados;
+      renderResultadosBusqJurados();
+    }
 
-      if (!chipsCont || !listCont) return;
+    function renderChipsJuradosUnif() {
+      const chipsCont = document.getElementById('chips-jurados-unif');
+      const cntEl = document.getElementById('cnt-jurados-unif');
+      if (!chipsCont) return;
 
-      if (setObj.size === 0) {
-        chipsCont.innerHTML = '<span class="text-[10px] text-slate-500 italic">Ningún jurado tildado (se generará enlace genérico)</span>';
-      } else {
-        const chipsHtml = [];
-        setObj.forEach(idx => {
-          const j = listaJurados[idx];
-          if (!j) return;
-          chipsHtml.push(`
-            <span class="inline-flex items-center gap-1 bg-blue-900 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
-              <span>${escapeHtml(j.nombre)}</span>
-              <button type="button" onclick="toggleSeleccionJurado('${contexto}', ${idx})" class="hover:text-amber-300 font-bold leading-none">✕</button>
-            </span>
-          `);
-        });
-        chipsCont.innerHTML = chipsHtml.join('');
-      }
+      if (cntEl) cntEl.textContent = juradosSeleccionados.size;
 
-      if (listaJurados.length === 0) {
-        listCont.innerHTML = '<div class="p-2.5 text-[11px] text-slate-400 text-center">No hay jurados cargados. Haga clic en "+ Nómina" o "👥 Jurados" para vincular la planilla.</div>';
+      if (juradosSeleccionados.size === 0) {
+        chipsCont.innerHTML = '<span class="text-[11px] text-slate-400 italic">Ningún jurado tildado (se generará enlace genérico)</span>';
         return;
       }
 
+      const html = [];
+      juradosSeleccionados.forEach(idx => {
+        const j = listaJurados[idx];
+        if (!j) return;
+        html.push(`
+          <span class="inline-flex items-center gap-1 bg-blue-900 text-white text-[11px] font-semibold px-2 py-0.5 rounded-full">
+            <span>${escapeHtml(j.nombre)}</span>
+            <button type="button" onclick="toggleSeleccionJurado(${idx})" class="hover:text-amber-300 font-bold leading-none">✕</button>
+          </span>
+        `);
+      });
+      chipsCont.innerHTML = html.join('');
+    }
+
+    function renderResultadosBusqJurados() {
+      const listCont = document.getElementById('resultados-busq-jurados');
+      const inpBusq = document.getElementById('busq-jurado-unif');
+      const totalEl = document.getElementById('total-jurados-disp');
+      const btnToggle = document.getElementById('btn-toggle-todos-jurados');
+      if (!listCont) return;
+
+      if (totalEl) totalEl.textContent = listaJurados.length;
+      if (btnToggle) btnToggle.textContent = mostrarTodosJurados ? 'Ocultar lista' : 'Ver lista completa';
+
       const q = (inpBusq ? inpBusq.value : '').toLowerCase().trim();
-      const filtradosJur = listaJurados
+
+      if (!q && !mostrarTodosJurados) {
+        listCont.classList.add('hidden');
+        return;
+      }
+
+      listCont.classList.remove('hidden');
+
+      if (listaJurados.length === 0) {
+        listCont.innerHTML = '<div class="p-3 text-[11px] text-slate-400 text-center">No hay jurados cargados. Haga clic en "+ Nómina" para vincular su planilla.</div>';
+        return;
+      }
+
+      const coincidencias = listaJurados
         .map((j, idx) => ({ j, idx }))
         .filter(({ j }) => {
           if (!q) return true;
@@ -835,21 +849,21 @@
                  j.nivel.toLowerCase().includes(q);
         });
 
-      if (filtradosJur.length === 0) {
-        listCont.innerHTML = '<div class="p-2 text-[11px] text-slate-400 text-center">Sin coincidencias para esa búsqueda.</div>';
+      if (coincidencias.length === 0) {
+        listCont.innerHTML = '<div class="p-2.5 text-[11px] text-slate-400 text-center">Sin coincidencias para esa búsqueda.</div>';
         return;
       }
 
-      listCont.innerHTML = filtradosJur.map(({ j, idx }) => {
-        const checked = setObj.has(idx);
+      listCont.innerHTML = coincidencias.map(({ j, idx }) => {
+        const checked = juradosSeleccionados.has(idx);
         return `
-          <label class="flex items-start gap-2 px-2.5 py-1.5 cursor-pointer hover:bg-blue-50/70 transition ${checked ? 'bg-blue-50/90' : ''}">
-            <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleSeleccionJurado('${contexto}', ${idx})"
+          <label class="flex items-start gap-2 px-2.5 py-2 cursor-pointer hover:bg-blue-50/70 transition ${checked ? 'bg-blue-50/90' : ''}">
+            <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleSeleccionJurado(${idx})"
               class="mt-0.5 rounded border-slate-300 text-blue-900 focus:ring-blue-600 cursor-pointer" />
             <div class="min-w-0 flex-1">
               <div class="flex items-center justify-between gap-1">
                 <span class="text-[11px] font-bold text-slate-800 truncate">${escapeHtml(j.nombre)}</span>
-                ${j.nivel ? `<span class="text-[9px] bg-slate-100 border border-slate-200 px-1 rounded text-slate-600 shrink-0">${escapeHtml(j.nivel)}</span>` : ''}
+                ${j.nivel ? `<span class="text-[9px] bg-slate-100 border border-slate-200 px-1.5 rounded text-slate-600 shrink-0">${escapeHtml(j.nivel)}</span>` : ''}
               </div>
               <p class="text-[10px] text-slate-500 truncate">
                 ${j.email ? `✉️ ${escapeHtml(j.email)}` : '<span class="text-amber-600">Sin correo</span>'}
@@ -859,6 +873,160 @@
           </label>
         `;
       }).join('');
+    }
+
+    function cambiarModoAsignacionUnificada(modo) {
+      modoAsignacionUnificada = modo === 'individual' ? 'individual' : 'materia';
+      const tabMat = document.getElementById('tab-unif-materia');
+      const tabInd = document.getElementById('tab-unif-individual');
+      const blkMat = document.getElementById('bloque-unif-materia');
+      const blkInd = document.getElementById('bloque-unif-individual');
+
+      if (modoAsignacionUnificada === 'materia') {
+        tabMat.className = 'py-2 px-3 rounded-md font-bold transition bg-blue-900 text-white shadow-xs';
+        tabInd.className = 'py-2 px-3 rounded-md font-semibold transition text-slate-600 hover:bg-white';
+        blkMat.classList.remove('hidden');
+        blkInd.classList.add('hidden');
+      } else {
+        tabInd.className = 'py-2 px-3 rounded-md font-bold transition bg-blue-900 text-white shadow-xs';
+        tabMat.className = 'py-2 px-3 rounded-md font-semibold transition text-slate-600 hover:bg-white';
+        blkInd.classList.remove('hidden');
+        blkMat.classList.add('hidden');
+      }
+      document.getElementById('msg-modal-unif').classList.add('hidden');
+    }
+
+    function abrirModalAsignacion(modoPreferido) {
+      const baseNivel = filtroNivelActivo
+        ? postulantes.filter(p => p.nivel === filtroNivelActivo)
+        : postulantes;
+      const conteo = {};
+      baseNivel.forEach(p => p.materias.forEach(m => { conteo[m] = (conteo[m] || 0) + 1; }));
+
+      const selMat = document.getElementById('unif-select-materia');
+      const matActualFiltro = document.getElementById('filtro-materia').value;
+      selMat.innerHTML = Object.keys(conteo).sort().map(mat =>
+        `<option value="${escapeHtml(mat)}" ${mat === matActualFiltro ? 'selected' : ''}>${escapeHtml(mat)} (${conteo[mat]} inscriptos)</option>`
+      ).join('');
+
+      const selPost = document.getElementById('unif-select-postulante');
+      selPost.innerHTML = postulantes.map(p =>
+        `<option value="${p.id}" ${p.id === seleccionadoId ? 'selected' : ''}>#${p.ordenNivel} ${escapeHtml(p.nombre)} — ${escapeHtml(p.nivel)} (DNI ${escapeHtml(p.dni)})</option>`
+      ).join('');
+
+      mostrarTodosJurados = false;
+      document.getElementById('busq-jurado-unif').value = '';
+      document.getElementById('inp-dias-unif').value = '10';
+      document.getElementById('msg-modal-unif').classList.add('hidden');
+
+      renderChipsJuradosUnif();
+      renderResultadosBusqJurados();
+      cambiarModoAsignacionUnificada(modoPreferido || 'materia');
+      document.getElementById('modal-asignacion-unificado').classList.remove('hidden');
+    }
+
+    function cerrarModalAsignacion() {
+      document.getElementById('modal-asignacion-unificado').classList.add('hidden');
+    }
+
+    function copiarTextoPortapapeles(texto) {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(texto).catch(() => fallbackCopiar(texto));
+      } else {
+        fallbackCopiar(texto);
+      }
+    }
+
+    function fallbackCopiar(texto) {
+      const ta = document.createElement('textarea');
+      ta.value = texto;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+
+    async function ejecutarAsignacionUnificada(enviarCorreo) {
+      const dias = parseInt(document.getElementById('inp-dias-unif').value, 10) || 10;
+      const baseUrl = window.location.origin + window.location.pathname;
+      const juradosElegidos = [];
+      juradosSeleccionados.forEach(idx => {
+        const j = listaJurados[idx];
+        if (j) juradosElegidos.push({ id: j.id, nombre: j.nombre, email: j.email });
+      });
+
+      let datosPayload = {
+        tipo: modoAsignacionUnificada,
+        periodo: periodoSeleccionado,
+        dias: dias,
+        jurados: juradosElegidos,
+        baseUrl: baseUrl,
+        enviarCorreo: enviarCorreo
+      };
+
+      if (modoAsignacionUnificada === 'materia') {
+        const materia = document.getElementById('unif-select-materia').value;
+        if (!materia) {
+          alert('Seleccione una materia o cargo.');
+          return;
+        }
+        datosPayload.nivel = filtroNivelActivo || 'TODOS';
+        datosPayload.materia = materia;
+      } else {
+        const postId = parseInt(document.getElementById('unif-select-postulante').value, 10);
+        const p = postulantes.find(item => item.id === postId);
+        if (!p) {
+          alert('Seleccione un postulante.');
+          return;
+        }
+        datosPayload.periodo = p.periodo;
+        datosPayload.nivel = p.nivel;
+        datosPayload.rowNumber = p.rowNumber;
+        datosPayload.dni = p.dni;
+        datosPayload.postulanteNombre = p.nombre;
+      }
+
+      const msgEl = document.getElementById('msg-modal-unif');
+      const btnCopiar = document.getElementById('btn-unif-copiar');
+      const btnCorreo = document.getElementById('btn-unif-correo');
+
+      msgEl.classList.add('hidden');
+      btnCopiar.disabled = true;
+      btnCorreo.disabled = true;
+
+      try {
+        const resp = await fetchConTimeout(API_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'generar_asignacion',
+            datos: datosPayload,
+            auth: { clave: claveCoordActual }
+          })
+        }, 45000);
+        const json = await resp.json();
+        if (!json.ok) throw new Error(json.error || 'No se pudo generar el enlace.');
+
+        const enlaces = json.enlaces || [];
+        const textoCopiar = enlaces.length === 1
+          ? enlaces[0].enlace
+          : enlaces.map(item => `${item.juradoNombre}:\n${item.enlace}`).join('\n\n');
+        copiarTextoPortapapeles(textoCopiar);
+
+        msgEl.textContent = enviarCorreo
+          ? `✓ ${json.enviadosCount} correo(s) enviado(s) desde Concursos y enlace(s) copiados (vence ${json.expTexto} hs).`
+          : `✓ ${enlaces.length > 1 ? enlaces.length + ' enlaces personales copiados' : 'Enlace copiado'} al portapapeles (vence ${json.expTexto} hs).`;
+        msgEl.className = 'text-xs rounded-lg p-2.5 font-medium bg-emerald-50 text-emerald-800 border border-emerald-200';
+        msgEl.classList.remove('hidden');
+      } catch (err) {
+        msgEl.textContent = err.message;
+        msgEl.className = 'text-xs rounded-lg p-2.5 font-medium bg-red-50 text-red-700 border border-red-200';
+        msgEl.classList.remove('hidden');
+      } finally {
+        btnCopiar.disabled = false;
+        btnCorreo.disabled = false;
+      }
     }
 
     function renderListaJuradosModal() {
@@ -925,23 +1093,22 @@
       btn.textContent = 'Vinculando...';
 
       try {
-        const resp = await fetch(API_URL, {
+        const resp = await fetchConTimeout(API_URL, {
           method: 'POST',
           body: JSON.stringify({
             action: 'configurar_jurados',
             urlPlanilla: url,
             auth: { clave: claveCoordActual }
           })
-        });
+        }, 45000);
         const json = await resp.json();
         if (!json.ok) throw new Error(json.error || 'No se pudo vincular la planilla.');
 
         juradosConfig = json.juradosConfig;
         listaJurados = json.jurados || [];
-        juradosSeleccionadosMat.clear();
-        juradosSeleccionadosInd.clear();
-        renderChecklistJurados('mat');
-        renderChecklistJurados('ind');
+        juradosSeleccionados.clear();
+        renderChipsJuradosUnif();
+        renderResultadosBusqJurados();
         renderListaJuradosModal();
         document.getElementById('inp-url-jurados').value = '';
 
@@ -965,13 +1132,13 @@
       btn.textContent = 'Activando...';
 
       try {
-        const resp = await fetch(API_URL, {
+        const resp = await fetchConTimeout(API_URL, {
           method: 'POST',
           body: JSON.stringify({
             action: 'activar_trigger_recordatorios',
             auth: { clave: claveCoordActual }
           })
-        });
+        }, 45000);
         const json = await resp.json();
         if (!json.ok) throw new Error(json.error || 'No se pudo activar.');
 
@@ -1063,14 +1230,14 @@
       btn.textContent = 'Verificando planilla en Drive...';
 
       try {
-        const resp = await fetch(API_URL, {
+        const resp = await fetchConTimeout(API_URL, {
           method: 'POST',
           body: JSON.stringify({
             action: 'crear_periodo',
             periodoData: { nombre: nombre, descripcion: descripcion, planillas: planillas },
             auth: { clave: claveInput }
           })
-        });
+        }, 45000);
         const json = await resp.json();
         if (!json.ok) {
           throw new Error(
@@ -1108,14 +1275,14 @@
       if (!confirm(`¿Quitar el apartado "${nombre}" de la aplicación? (La planilla en Drive no se borra).`)) return;
 
       try {
-        const resp = await fetch(API_URL, {
+        const resp = await fetchConTimeout(API_URL, {
           method: 'POST',
           body: JSON.stringify({
             action: 'eliminar_periodo',
             periodoId: id,
             auth: { clave: claveInput }
           })
-        });
+        }, 45000);
         const json = await resp.json();
         if (!json.ok) {
           alert(json.error === 'CLAVE_INVALIDA' ? 'Clave incorrecta.' : json.error);
@@ -1159,11 +1326,16 @@
         return;
       }
 
+      const avisoLento = setTimeout(() => {
+        const txt = document.getElementById('texto-carga');
+        if (txt) {
+          txt.textContent = 'Conectando con Google Apps Script (puede demorar unos segundos la primera vez)...';
+        }
+      }, 6000);
+
       try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
-        const resp = await fetch(`${API_URL}?action=config`, { signal: controller.signal });
-        clearTimeout(timeoutId);
+        const resp = await fetchConTimeout(`${API_URL}?action=config`, {}, 45000);
+        clearTimeout(avisoLento);
 
         const textoResp = await resp.text();
         let cfg;
@@ -1196,9 +1368,10 @@
           return;
         }
       } catch (e) {
+        clearTimeout(avisoLento);
         const detalle = e.name === 'AbortError'
-          ? 'El servidor de Google tardó demasiado en responder (tiempo agotado).'
-          : (e.message || 'Error de red o permisos CORS en Apps Script.');
+          ? 'La conexión superó los 45 segundos. Verificá que API_URL no tenga /a/macros/webmail.unt.edu.ar/ y probá en una ventana sin bloqueadores de anuncios.'
+          : (e.message || 'Error de red o permisos en Apps Script.');
         document.getElementById('pantalla-carga').innerHTML =
           `<div class="text-center p-6 max-w-md bg-white rounded-xl border border-red-200 shadow-sm space-y-2">
             <p class="text-red-600 text-sm font-bold">No se pudo conectar con Google Apps Script</p>
@@ -1239,7 +1412,7 @@
           clave: auth.clave || ''
         });
 
-        const resp = await fetch(`${API_URL}?${query.toString()}`);
+        const resp = await fetchConTimeout(`${API_URL}?${query.toString()}`, {}, 45000);
         const json = await resp.json();
 
         if (!json.ok) {
@@ -1308,9 +1481,10 @@
           return;
         }
         document.getElementById('pantalla-carga').innerHTML =
-          `<div class="text-center p-6 max-w-md bg-white rounded-xl border border-red-200 shadow-sm">
-            <p class="text-red-600 text-sm font-bold mb-1">Acceso no disponible</p>
+          `<div class="text-center p-6 max-w-md bg-white rounded-xl border border-red-200 shadow-sm space-y-2">
+            <p class="text-red-600 text-sm font-bold">Acceso no disponible</p>
             <p class="text-xs text-slate-600">${escapeHtml(msg)}</p>
+            <button onclick="location.reload()" class="mt-2 px-3.5 py-1.5 bg-blue-900 text-white text-xs font-bold rounded">Reintentar</button>
           </div>`;
       } finally {
         if (btnAct) {
@@ -1355,188 +1529,15 @@
       aplicarFiltros();
     }
 
-    function copiarTextoPortapapeles(texto, onOk) {
-      if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(texto).then(onOk).catch(() => fallbackCopiar(texto, onOk));
-      } else {
-        fallbackCopiar(texto, onOk);
-      }
-    }
-
-    function fallbackCopiar(texto, onOk) {
-      const ta = document.createElement('textarea');
-      ta.value = texto;
-      ta.style.position = 'fixed';
-      ta.style.left = '-9999px';
-      document.body.appendChild(ta);
-      ta.select();
-      try {
-        document.execCommand('copy');
-        onOk();
-      } catch (e) {}
-      document.body.removeChild(ta);
-    }
-
-    function obtenerArrayJuradosSeleccionados(contexto) {
-      const setObj = contexto === 'ind' ? juradosSeleccionadosInd : juradosSeleccionadosMat;
-      const seleccionados = [];
-      setObj.forEach(idx => {
-        const j = listaJurados[idx];
-        if (j) {
-          seleccionados.push({ id: j.id, nombre: j.nombre, email: j.email });
-        }
-      });
-      return seleccionados;
-    }
-
-    function formatearTextoEnlacesCopiados(enlaces) {
-      if (!enlaces || enlaces.length === 0) return '';
-      if (enlaces.length === 1) return enlaces[0].enlace;
-      return enlaces.map(item => `${item.juradoNombre}:\n${item.enlace}`).join('\n\n');
-    }
-
-    async function ejecutarAsignacionMateria(enviarCorreo) {
-      const materia = document.getElementById('filtro-materia').value;
-      if (!materia) return;
-
-      const nivel = filtroNivelActivo || 'TODOS';
-      const dias = parseInt(document.getElementById('inp-dias-materia').value, 10) || 10;
-      const juradosElegidos = obtenerArrayJuradosSeleccionados('mat');
-
-      const msgEl = document.getElementById('msg-asig-materia');
-      const btnCopiar = document.getElementById('btn-copiar-link-materia');
-      const btnCorreo = document.getElementById('btn-enviar-link-materia');
-
-      msgEl.classList.add('hidden');
-      btnCopiar.disabled = true;
-      btnCorreo.disabled = true;
-
-      try {
-        const baseUrl = window.location.origin + window.location.pathname;
-        const resp = await fetch(API_URL, {
-          method: 'POST',
-          body: JSON.stringify({
-            action: 'generar_asignacion',
-            datos: {
-              tipo: 'materia',
-              periodo: periodoSeleccionado,
-              nivel: nivel,
-              materia: materia,
-              dias: dias,
-              jurados: juradosElegidos,
-              baseUrl: baseUrl,
-              enviarCorreo: enviarCorreo
-            },
-            auth: { clave: claveCoordActual }
-          })
-        });
-        const json = await resp.json();
-        if (!json.ok) throw new Error(json.error || 'No se pudo generar el enlace.');
-
-        const textoCopiar = formatearTextoEnlacesCopiados(json.enlaces);
-        copiarTextoPortapapeles(textoCopiar, () => {});
-
-        const cant = (json.enlaces || []).length;
-        msgEl.textContent = enviarCorreo
-          ? `✓ ${json.enviadosCount} correo(s) enviado(s) desde Concursos y enlace(s) copiados (vence ${json.expTexto} hs).`
-          : `✓ ${cant > 1 ? cant + ' enlaces personales copiados' : 'Enlace copiado'} al portapapeles (vence ${json.expTexto} hs).`;
-        msgEl.className = 'text-[11px] font-semibold text-emerald-900 bg-emerald-100 border border-emerald-300 rounded p-1.5 text-center';
-        msgEl.classList.remove('hidden');
-      } catch (err) {
-        msgEl.textContent = err.message;
-        msgEl.className = 'text-[11px] font-semibold text-red-700 bg-red-50 border border-red-200 rounded p-1.5 text-center';
-        msgEl.classList.remove('hidden');
-      } finally {
-        btnCopiar.disabled = false;
-        btnCorreo.disabled = false;
-      }
-    }
-
-    function abrirModalAsignarIndividual() {
-      const p = postulantes.find(item => item.id === seleccionadoId);
-      if (!p) return;
-
-      document.getElementById('titulo-modal-ind').textContent = `Asignar: ${p.nombre}`;
-      document.getElementById('inp-dias-individual').value = '10';
-      document.getElementById('msg-modal-individual').classList.add('hidden');
-      renderChecklistJurados('ind');
-      document.getElementById('modal-asignar-individual').classList.remove('hidden');
-    }
-
-    function cerrarModalAsignarIndividual() {
-      document.getElementById('modal-asignar-individual').classList.add('hidden');
-    }
-
-    async function ejecutarAsignacionIndividual(enviarCorreo) {
-      const p = postulantes.find(item => item.id === seleccionadoId);
-      if (!p) return;
-
-      const dias = parseInt(document.getElementById('inp-dias-individual').value, 10) || 10;
-      const juradosElegidos = obtenerArrayJuradosSeleccionados('ind');
-
-      const msgEl = document.getElementById('msg-modal-individual');
-      const btnCopiar = document.getElementById('btn-ind-copiar');
-      const btnCorreo = document.getElementById('btn-ind-correo');
-
-      msgEl.classList.add('hidden');
-      btnCopiar.disabled = true;
-      btnCorreo.disabled = true;
-
-      try {
-        const baseUrl = window.location.origin + window.location.pathname;
-        const resp = await fetch(API_URL, {
-          method: 'POST',
-          body: JSON.stringify({
-            action: 'generar_asignacion',
-            datos: {
-              tipo: 'individual',
-              periodo: p.periodo,
-              nivel: p.nivel,
-              rowNumber: p.rowNumber,
-              dni: p.dni,
-              postulanteNombre: p.nombre,
-              dias: dias,
-              jurados: juradosElegidos,
-              baseUrl: baseUrl,
-              enviarCorreo: enviarCorreo
-            },
-            auth: { clave: claveCoordActual }
-          })
-        });
-        const json = await resp.json();
-        if (!json.ok) throw new Error(json.error || 'No se pudo generar el enlace.');
-
-        const textoCopiar = formatearTextoEnlacesCopiados(json.enlaces);
-        copiarTextoPortapapeles(textoCopiar, () => {});
-
-        const cant = (json.enlaces || []).length;
-        msgEl.textContent = enviarCorreo
-          ? `✓ ${json.enviadosCount} correo(s) enviado(s) desde Concursos y enlace(s) copiados (vence ${json.expTexto} hs).`
-          : `✓ ${cant > 1 ? cant + ' enlaces individuales copiados' : 'Enlace individual copiado'} (vence ${json.expTexto} hs).`;
-        msgEl.className = 'text-xs rounded-lg p-2.5 font-medium bg-emerald-50 text-emerald-800 border border-emerald-200';
-        msgEl.classList.remove('hidden');
-      } catch (err) {
-        msgEl.textContent = err.message;
-        msgEl.className = 'text-xs rounded-lg p-2.5 font-medium bg-red-50 text-red-700 border border-red-200';
-        msgEl.classList.remove('hidden');
-      } finally {
-        btnCopiar.disabled = false;
-        btnCorreo.disabled = false;
-      }
-    }
-
-    function actualizarPanelEnlaceMateria() {
-      const panel = document.getElementById('panel-asignacion-materia');
-      const msgEl = document.getElementById('msg-asig-materia');
-      if (!panel || MODO_MATERIA || MODO_INDIVIDUAL) return;
+    function actualizarBotonCompactoMateria() {
+      const btn = document.getElementById('btn-abrir-asig-materia');
+      if (!btn || MODO_MATERIA || MODO_INDIVIDUAL) return;
       const materia = document.getElementById('filtro-materia').value;
       if (!materia) {
-        panel.classList.add('hidden');
-        return;
+        btn.classList.add('hidden');
+      } else {
+        btn.classList.remove('hidden');
       }
-      if (msgEl) msgEl.classList.add('hidden');
-      renderChecklistJurados('mat');
-      panel.classList.remove('hidden');
     }
 
     function actualizarEstadisticas(listaBase) {
@@ -1573,7 +1574,7 @@
       if (Object.keys(conteo).includes(valorPrevio)) {
         select.value = valorPrevio;
       }
-      actualizarPanelEnlaceMateria();
+      actualizarBotonCompactoMateria();
     }
 
     function aplicarFiltros() {
@@ -1591,7 +1592,7 @@
         : postulantes;
 
       actualizarEstadisticas(baseNivel);
-      actualizarPanelEnlaceMateria();
+      actualizarBotonCompactoMateria();
 
       filtrados = baseNivel.filter(p => {
         const matchTexto = !q ||
@@ -1665,9 +1666,7 @@
       estadoSeleccionadoLocal = null;
       renderLista();
       renderDetalle();
-      if (window.innerWidth < 1024) {
-        cambiarVistaMovil('ficha');
-      }
+      if (window.innerWidth < 1024) cambiarVistaMovil('ficha');
     }
 
     function navegarPostulante(delta) {
@@ -1698,19 +1697,16 @@
       btn.textContent = 'Guardando dictamen en Google Sheets...';
 
       try {
-        const resp = await fetch(API_URL, {
+        const resp = await fetchConTimeout(API_URL, {
           method: 'POST',
           body: JSON.stringify({
             action: 'guardar',
             sheetId: p.sheetId,
             rowNumber: p.rowNumber,
-            evalData: {
-              estado: estadoAEnviar,
-              obs: nuevaObs
-            },
+            evalData: { estado: estadoAEnviar, obs: nuevaObs },
             auth: getAuthPayload()
           })
-        });
+        }, 45000);
         const json = await resp.json();
         if (!json.ok) throw new Error(json.error || 'Error al guardar');
 
