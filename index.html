@@ -12,12 +12,24 @@
     .visor-fullscreen {
       position: fixed !important;
       inset: 0 !important;
-      z-index: 60 !important;
+      z-index: 50 !important;
       width: 100vw !important;
       height: 100vh !important;
-      min-height: 100vh !important;
     }
   </style>
+  <!-- Captura cualquier error de sintaxis o carga para evitar bloqueos silenciosos -->
+  <script>
+    window.addEventListener('error', function(e) {
+      var el = document.getElementById('pantalla-carga');
+      if (el && !el.classList.contains('hidden')) {
+        el.innerHTML =
+          '<div class="text-center p-5 max-w-md bg-white rounded-xl border border-red-300 shadow-sm space-y-2">' +
+          '<p class="text-red-600 text-sm font-bold">Error al iniciar la aplicación</p>' +
+          '<p class="text-xs text-slate-600">' + (e.message || 'Error de script en index.html') + '</p>' +
+          '</div>';
+      }
+    });
+  </script>
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen lg:h-screen flex flex-col lg:overflow-hidden font-sans">
 
@@ -39,7 +51,7 @@
           <!-- Controles de Coordinación (se muestran SOLO tras validar la clave) -->
           <div id="controles-periodo-header" class="hidden items-center gap-1 flex-wrap">
             <select id="select-periodo-header" onchange="cambiarPeriodoDesdeHeader(this.value)"
-              class="bg-amber-400 text-blue-950 font-extrabold text-[11px] md:text-xs px-2 py-0.5 rounded cursor-pointer border border-amber-300 focus:outline-none max-w-[175px]">
+              class="bg-amber-400 text-blue-950 font-extrabold text-[11px] md:text-xs px-2 py-0.5 rounded cursor-pointer border border-amber-300 focus:outline-none max-w-[180px]">
             </select>
             <button onclick="abrirModalNuevoPeriodo()" title="Vincular nueva planilla de inscripción de Drive"
               class="bg-emerald-500 hover:bg-emerald-400 text-blue-950 font-extrabold text-[11px] md:text-xs px-2 py-0.5 rounded transition shrink-0">
@@ -48,10 +60,6 @@
             <button onclick="abrirModalJurados()" title="Gestionar base de datos de jurados evaluadores y recordatorios"
               class="bg-sky-300 hover:bg-sky-200 text-blue-950 font-extrabold text-[11px] md:text-xs px-2 py-0.5 rounded transition shrink-0">
               👥 Jurados
-            </button>
-            <button onclick="abrirModalAsignacionUnificada('materia')" title="Centro unificado para asignar enlaces a jurados por materia o postulante"
-              class="bg-white hover:bg-blue-50 text-blue-950 font-extrabold text-[11px] md:text-xs px-2 py-0.5 rounded transition shrink-0">
-              🔗 Asignar Enlaces
             </button>
           </div>
         </div>
@@ -236,7 +244,6 @@
           </div>
         </div>
 
-        <!-- Activador de Recordatorios Automáticos -->
         <div class="bg-amber-50/80 border border-amber-200 rounded-lg p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <div>
             <p class="font-bold text-amber-950">Recordatorios automáticos de vencimiento (plazo 10 días)</p>
@@ -252,7 +259,6 @@
 
         <p id="msg-modal-jurados" class="hidden text-xs rounded-lg p-2.5 font-medium"></p>
 
-        <!-- Listado de Jurados Cargados -->
         <div class="border border-slate-200 rounded-lg overflow-hidden">
           <div class="bg-slate-100 px-3 py-1.5 border-b border-slate-200 flex justify-between font-bold text-slate-600">
             <span>Jurados disponibles para asignar</span>
@@ -273,97 +279,53 @@
     </div>
   </div>
 
-  <!-- CENTRO UNIFICADO DE ASIGNACIÓN DE ENLACES (Materia/Cargo + Postulante Individual + Buscador Compacto de Jurados) -->
-  <div id="modal-asignacion-unificada" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-lg w-full p-5 space-y-4 my-auto">
+  <!-- Modal Asignar Enlace Individual a Jurados -->
+  <div id="modal-asignar-individual" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-md w-full p-5 space-y-3.5 my-auto">
       <div class="flex items-start justify-between gap-2 border-b border-slate-200 pb-3">
         <div>
           <span class="text-[10px] font-bold uppercase tracking-wider text-blue-800 bg-blue-50 px-2 py-0.5 rounded-full">
-            Gestión de Evaluadores
+            Evaluación Individual
           </span>
-          <h3 class="text-base font-extrabold text-slate-900 mt-1">Centro de Asignación de Enlaces</h3>
+          <h3 class="text-base font-extrabold text-slate-900 mt-1" id="titulo-modal-ind">Asignar Postulante</h3>
         </div>
-        <button onclick="cerrarModalAsignacionUnificada()" class="text-slate-400 hover:text-slate-700 font-bold text-lg leading-none px-1">✕</button>
+        <button onclick="cerrarModalAsignarIndividual()" class="text-slate-400 hover:text-slate-700 font-bold text-lg leading-none px-1">✕</button>
       </div>
 
-      <!-- Pestañas: Por Materia/Cargo vs Postulante Individual -->
-      <div class="grid grid-cols-2 bg-slate-100 p-1 rounded-lg border border-slate-200 gap-1 text-xs font-bold">
-        <button type="button" id="tab-asig-materia" onclick="cambiarTabAsignacion('materia')"
-          class="py-2 px-2 rounded-md transition bg-blue-950 text-white shadow-2xs">
-          📚 Por Materia / Cargo
-        </button>
-        <button type="button" id="tab-asig-individual" onclick="cambiarTabAsignacion('individual')"
-          class="py-2 px-2 rounded-md transition text-slate-600 hover:text-slate-900">
-          👤 Postulante Individual
-        </button>
-      </div>
-
-      <div class="space-y-3 text-xs">
-        <!-- Selector de Materia / Cargo -->
-        <div id="bloque-asig-materia" class="space-y-1">
-          <label class="font-bold text-slate-700 block">1. Materia o Cargo a evaluar *</label>
-          <select id="sel-asig-materia"
-            class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white font-medium focus:outline-none focus:ring-2 focus:ring-blue-600">
-          </select>
-        </div>
-
-        <!-- Selector de Postulante Individual -->
-        <div id="bloque-asig-individual" class="hidden space-y-1">
-          <label class="font-bold text-slate-700 block">1. Postulante a evaluar *</label>
-          <select id="sel-asig-postulante"
-            class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white font-medium focus:outline-none focus:ring-2 focus:ring-blue-600">
-          </select>
-        </div>
-
-        <!-- Buscador Compacto de Jurados (no despliega la lista completa) -->
-        <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2">
-          <div class="flex items-center justify-between gap-2">
-            <label class="font-bold text-slate-700">2. Buscar y tildar Jurados (1 o más)</label>
-            <div class="flex items-center gap-2">
-              <button type="button" onclick="limpiarSeleccionJuradosUnif()" class="text-[11px] font-semibold text-slate-500 hover:text-red-600">
-                Limpiar
-              </button>
-              <button type="button" onclick="cerrarModalAsignacionUnificada(); abrirModalJurados();" class="text-[11px] font-bold text-blue-700 hover:underline">
-                + Nómina
-              </button>
-            </div>
-          </div>
-
-          <!-- Etiquetas de jurados seleccionados -->
-          <div id="chips-jurados-unif" class="flex flex-wrap gap-1.5 min-h-[24px]"></div>
-
-          <!-- Input de búsqueda (muestra resultados solo al escribir) -->
-          <input type="text" id="busq-jurado-unif"
-            placeholder="Escriba apellido, DNI, correo o especialidad para buscar..."
-            oninput="renderResultadosBusquedaJurados()"
-            class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-600" />
-
-          <!-- Resultados filtrados (ocultos mientras el buscador está vacío) -->
-          <div id="lista-resultados-jurados-unif"
-            class="hidden max-h-40 overflow-y-auto border border-blue-200 rounded-lg bg-white divide-y divide-slate-100 shadow-sm">
-          </div>
-        </div>
-
-        <!-- Plazo Reglamentario -->
-        <div class="flex items-center justify-between gap-3 bg-amber-50/70 border border-amber-200 rounded-lg px-3 py-2">
-          <div>
-            <label class="font-bold text-slate-800 block">3. Vigencia reglamentaria (días)</label>
-            <span class="text-[11px] text-slate-500">Por reglamento corresponde 10 días corridos.</span>
-          </div>
-          <input type="number" id="inp-dias-unif" value="10" min="1" max="365"
-            class="w-20 px-2.5 py-1.5 border border-amber-300 rounded-lg bg-white font-extrabold text-center text-sm focus:outline-none focus:ring-2 focus:ring-blue-600" />
-        </div>
-
-        <p id="msg-modal-unif" class="hidden text-xs rounded-lg p-2.5 font-medium"></p>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-          <button type="button" id="btn-unif-copiar" onclick="ejecutarAsignacionUnificada(false)"
-            class="w-full py-2.5 px-3 rounded-lg bg-blue-900 hover:bg-blue-800 text-white font-bold transition shadow-xs">
-            🔗 Copiar enlace(s)
+      <div class="space-y-2.5 text-xs">
+        <div class="flex items-center justify-between">
+          <label class="font-bold text-slate-700">Seleccionar Jurados (1 o más)</label>
+          <button type="button" onclick="limpiarSeleccionJurados('ind')" class="text-[11px] font-semibold text-slate-500 hover:text-red-600">
+            Limpiar selección
           </button>
-          <button type="button" id="btn-unif-correo" onclick="ejecutarAsignacionUnificada(true)"
-            class="w-full py-2.5 px-3 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-bold transition shadow-xs">
-            ✉️ Enviar por correo
+        </div>
+
+        <div id="chips-jurados-ind" class="flex flex-wrap gap-1 min-h-[24px]"></div>
+
+        <input type="text" id="busq-jurado-ind" placeholder="Buscar jurado por nombre, DNI o área..."
+          oninput="renderChecklistJurados('ind')"
+          class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-600" />
+
+        <div id="lista-check-jurados-ind" class="max-h-40 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100 bg-slate-50">
+        </div>
+
+        <div class="pt-1">
+          <label class="font-bold text-slate-700 block mb-1">Vigencia reglamentaria del enlace (en días)</label>
+          <input type="number" id="inp-dias-individual" value="10" min="1" max="365"
+            class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white font-bold focus:outline-none focus:ring-2 focus:ring-blue-600" />
+          <p class="text-[11px] text-slate-500 mt-1">Por reglamento se establece un plazo de 10 días corridos desde su emisión.</p>
+        </div>
+
+        <p id="msg-modal-individual" class="hidden text-xs rounded-lg p-2.5 font-medium"></p>
+
+        <div class="grid grid-cols-1 gap-2 pt-1">
+          <button type="button" id="btn-ind-copiar" onclick="ejecutarAsignacionIndividual(false)"
+            class="w-full py-2.5 px-3 rounded-lg bg-blue-900 hover:bg-blue-800 text-white font-bold transition">
+            🔗 Generar y copiar enlace(s)
+          </button>
+          <button type="button" id="btn-ind-correo" onclick="ejecutarAsignacionIndividual(true)"
+            class="w-full py-2.5 px-3 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-bold transition">
+            ✉️ Enviar enlace personal por correo
           </button>
         </div>
       </div>
@@ -379,7 +341,7 @@
   <!-- Cuerpo Principal Responsive -->
   <main id="app-principal" class="hidden flex-1 grid grid-cols-1 lg:grid-cols-12 lg:overflow-hidden">
 
-    <!-- COLUMNA 1: Padrón y Filtros (Despejada) -->
+    <!-- COLUMNA 1: Padrón y Filtros -->
     <section id="col-padron" class="lg:col-span-3 bg-white border-r border-slate-200 flex flex-col lg:h-full lg:overflow-hidden">
       <div class="p-3 bg-slate-50 border-b border-slate-200 space-y-2 shrink-0">
         <input type="text" id="filtro-texto" placeholder="Buscar por apellido, DNI, título..."
@@ -391,11 +353,47 @@
             <option value="">Todas las materias / cargos</option>
           </select>
 
-          <!-- Botón compacto que abre el Centro Unificado de Asignación -->
-          <button type="button" id="btn-abrir-asignacion-padron" onclick="abrirModalAsignacionUnificada('materia')"
-            class="w-full py-1.5 px-2.5 rounded-md bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-2xs">
-            🔗 Asignar / Enviar enlaces a jurados
-          </button>
+          <div id="panel-asignacion-materia" class="hidden bg-emerald-50/90 border border-emerald-300 rounded-lg p-2.5 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-extrabold text-emerald-950">Asignar Materia a Jurados</span>
+              <div class="flex items-center gap-2">
+                <button type="button" onclick="limpiarSeleccionJurados('mat')" class="text-[10px] font-semibold text-slate-500 hover:text-red-600">
+                  Limpiar
+                </button>
+                <button type="button" onclick="abrirModalJurados()" class="text-[10px] font-bold text-blue-700 hover:underline">
+                  + Nómina
+                </button>
+              </div>
+            </div>
+
+            <div id="chips-jurados-mat" class="flex flex-wrap gap-1"></div>
+
+            <input type="text" id="busq-jurado-mat" placeholder="Buscar jurado por nombre, DNI o área..."
+              oninput="renderChecklistJurados('mat')"
+              class="w-full text-xs px-2.5 py-1.5 border border-emerald-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600" />
+
+            <div id="lista-check-jurados-mat" class="max-h-32 overflow-y-auto border border-emerald-200 rounded bg-white divide-y divide-slate-100">
+            </div>
+
+            <div class="flex items-center gap-2">
+              <label class="text-[11px] font-semibold text-slate-700 shrink-0">Vigencia (días):</label>
+              <input type="number" id="inp-dias-materia" value="10" min="1" max="365"
+                class="w-16 text-xs px-2 py-1 border border-emerald-300 rounded bg-white font-bold text-center" />
+              <span class="text-[10px] text-slate-500 leading-tight">Plazo reglam.</span>
+            </div>
+
+            <div class="grid grid-cols-1 gap-1.5">
+              <button id="btn-copiar-link-materia" onclick="ejecutarAsignacionMateria(false)"
+                class="w-full py-1.5 px-2.5 rounded-md bg-blue-900 hover:bg-blue-800 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
+                🔗 Copiar enlace(s) de esta materia
+              </button>
+              <button id="btn-enviar-link-materia" onclick="ejecutarAsignacionMateria(true)"
+                class="w-full py-1.5 px-2.5 rounded-md bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
+                ✉️ Enviar enlace personal por correo
+              </button>
+            </div>
+            <p id="msg-asig-materia" class="hidden text-[11px] font-semibold text-center"></p>
+          </div>
         </div>
 
         <div class="flex gap-1">
@@ -432,9 +430,9 @@
             Sig. →
           </button>
         </div>
-        <button id="btn-copiar-link" onclick="abrirModalAsignacionUnificada('individual')"
+        <button id="btn-copiar-link" onclick="abrirModalAsignarIndividual()"
           class="text-[11px] bg-blue-900 hover:bg-blue-800 text-white px-2.5 py-1 rounded font-semibold transition shrink-0">
-          🔗 Asignar este postulante
+          🔗 Asignar enlace individual
         </button>
       </div>
 
@@ -450,8 +448,8 @@
              class="text-[11px] bg-slate-700 hover:bg-slate-600 text-white px-2.5 py-1 rounded transition">
             Abrir pestaña ↗
           </a>
-          <button id="btn-toggle-fullscreen" onclick="toggleFullscreenVisor()"
-                  class="text-[11px] bg-blue-700 hover:bg-blue-600 text-white font-semibold px-2.5 py-1 rounded transition">
+          <button onclick="toggleFullscreenVisor()"
+                  class="hidden lg:inline-block text-[11px] bg-blue-700 hover:bg-blue-600 text-white px-2.5 py-1 rounded transition">
             ⛶ Ampliar
           </button>
         </div>
@@ -498,8 +496,8 @@
 
     let juradosConfig = null;
     let listaJurados = [];
-    let juradosSeleccionadosUnif = new Set();
-    let tabAsignacionActiva = 'materia';
+    let juradosSeleccionadosMat = new Set();
+    let juradosSeleccionadosInd = new Set();
 
     let postulantes = [];
     let filtrados = [];
@@ -519,42 +517,6 @@
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
-    }
-
-    function obtenerIniciales(nombreCompleto) {
-      const limpio = String(nombreCompleto || '').replace(/,/g, ' ').trim();
-      if (!limpio) return 'DOC';
-      const partes = limpio.split(/\s+/).filter(Boolean);
-      if (partes.length === 1) return partes[0].slice(0, 2).toUpperCase();
-      return (partes[0][0] + partes[1][0]).toUpperCase();
-    }
-
-    function construirHtmlAvatarPostulante(p) {
-      const iniciales = obtenerIniciales(p.nombre);
-      let imgUrl = '';
-      if (p.fotoFileId) {
-        imgUrl = `https://drive.google.com/thumbnail?id=${encodeURIComponent(p.fotoFileId)}&sz=w200`;
-      } else if (p.emailMd5) {
-        imgUrl = `https://www.gravatar.com/avatar/${encodeURIComponent(p.emailMd5)}?s=160&d=404`;
-      }
-
-      const fallbackId = `avatar-fb-${p.id}`;
-      const imgHtml = imgUrl
-        ? `<img src="${imgUrl}" alt="Foto de ${escapeHtml(p.nombre)}"
-                onload="this.classList.remove('hidden'); const fb = document.getElementById('${fallbackId}'); if (fb) fb.classList.add('hidden');"
-                onerror="this.remove();"
-                class="hidden w-12 h-12 rounded-full object-cover border-2 border-blue-900 shadow-sm shrink-0 bg-white" />`
-        : '';
-
-      return `
-        <div class="relative shrink-0" title="${p.email ? 'Perfil: ' + escapeHtml(p.email) : escapeHtml(p.nombre)}">
-          ${imgHtml}
-          <div id="${fallbackId}"
-               class="w-12 h-12 rounded-full bg-blue-950 text-amber-300 font-extrabold text-sm flex items-center justify-center border-2 border-blue-800 shadow-sm select-none">
-            ${escapeHtml(iniciales)}
-          </div>
-        </div>
-      `;
     }
 
     function construirHtmlTelefono(rawTel) {
@@ -664,12 +626,6 @@
     }
 
     function cambiarVistaMovil(vista) {
-      // Si el visor estaba en pantalla completa y el usuario cambia de pestaña móvil, salimos del fullscreen
-      const panelVisor = document.getElementById('panel-visor');
-      if (panelVisor && panelVisor.classList.contains('visor-fullscreen')) {
-        toggleFullscreenVisor();
-      }
-
       vistaMovilActiva = vista;
 
       const tabs = ['padron', 'ficha', 'visor'];
@@ -685,6 +641,7 @@
 
       const colPadron = document.getElementById('col-padron');
       const colFicha = document.getElementById('col-ficha');
+      const panelVisor = document.getElementById('panel-visor');
 
       if (MODO_INDIVIDUAL) {
         colPadron.className = 'hidden';
@@ -692,469 +649,4 @@
         panelVisor.className = `${vista === 'visor' ? 'flex' : 'hidden'} lg:flex lg:col-span-7 bg-slate-800 flex-col min-h-[calc(100vh-96px)] lg:min-h-0 lg:h-full lg:overflow-hidden`;
       } else {
         colPadron.className = `${vista === 'padron' ? 'flex' : 'hidden'} lg:flex lg:col-span-3 bg-white border-r border-slate-200 flex-col lg:h-full lg:overflow-hidden`;
-        colFicha.className = `${vista === 'ficha' ? 'flex' : 'hidden'} lg:flex lg:col-span-4 bg-white border-r border-slate-200 flex-col lg:h-full lg:overflow-hidden`;
-        panelVisor.className = `${vista === 'visor' ? 'flex' : 'hidden'} lg:flex lg:col-span-5 bg-slate-800 flex-col min-h-[calc(100vh-96px)] lg:min-h-0 lg:h-full lg:overflow-hidden`;
-      }
-
-      if (window.innerWidth < 1024) {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-    }
-
-    function configurarInterfazSegunModo() {
-      const badgeRestringido = document.getElementById('badge-modo-restringido');
-      const badgeVigencia = document.getElementById('badge-vigencia-jurado');
-
-      if (MODO_INDIVIDUAL || MODO_MATERIA) {
-        if (PARAM_EXP && !isNaN(Number(PARAM_EXP))) {
-          const fechaLim = new Date(Number(PARAM_EXP)).toLocaleString('es-AR', {
-            day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
-          });
-          badgeVigencia.textContent = `⏳ Plazo hasta: ${fechaLim} hs`;
-          badgeVigencia.classList.remove('hidden');
-        }
-      }
-
-      if (MODO_INDIVIDUAL) {
-        document.getElementById('barra-navegacion').classList.add('hidden');
-        document.getElementById('mob-tab-padron').classList.add('hidden');
-        badgeRestringido.textContent = PARAM_JN ? `Jurado: ${PARAM_JN}` : 'Evaluación Individual';
-        badgeRestringido.classList.remove('hidden');
-      } else if (MODO_MATERIA) {
-        document.getElementById('bloque-filtro-materia').classList.add('hidden');
-        document.getElementById('btn-copiar-link').classList.add('hidden');
-        document.getElementById('stats-generales').classList.remove('hidden');
-        document.getElementById('stats-generales').classList.add('flex');
-        const nivTxt = PARAM_NIVEL !== 'TODOS' ? ` · ${PARAM_NIVEL}` : '';
-        const jurTxt = PARAM_JN ? ` (${PARAM_JN})` : '';
-        badgeRestringido.textContent = `Materia: ${PARAM_M}${nivTxt}${jurTxt}`;
-        badgeRestringido.title = `${PARAM_M}${nivTxt}${jurTxt}`;
-        badgeRestringido.classList.remove('hidden');
-      } else {
-        document.getElementById('tabs-nivel').classList.remove('hidden');
-        document.getElementById('tabs-nivel').classList.add('flex');
-        document.getElementById('stats-generales').classList.remove('hidden');
-        document.getElementById('stats-generales').classList.add('flex');
-      }
-      cambiarVistaMovil(vistaMovilActiva);
-    }
-
-    async function cargarEscudoDesdeApi(imgEl) {
-      if (escudoIntentado || API_URL.startsWith('PEGAR_AQUI')) return;
-      escudoIntentado = true;
-      try {
-        const resp = await fetch(`${API_URL}?action=escudo`);
-        const json = await resp.json();
-        if (json && json.ok && json.dataUrl) {
-          imgEl.src = json.dataUrl;
-          imgEl.classList.remove('hidden');
-          const badge = document.getElementById('badge-unt');
-          if (badge) badge.classList.add('hidden');
-        }
-      } catch (e) {}
-    }
-
-    function renderSelectorPeriodosLogin() {
-      const grid = document.getElementById('grid-periodos-login');
-      grid.innerHTML = periodosDisponibles.map(per => {
-        const sel = per.id === periodoSeleccionado;
-        const btnEliminar = (!per.esBase)
-          ? `<span onclick="event.stopPropagation(); eliminarPeriodoDinamico('${per.id}', '${per.nombre.replace(/'/g, '')}')"
-               title="Quitar este apartado"
-               class="text-[10px] text-slate-400 hover:text-red-600 px-1 rounded">✕</span>`
-          : '';
-
-        return `
-          <div onclick="seleccionarPeriodoLogin('${per.id}')"
-            class="cursor-pointer text-left p-3 rounded-xl border-2 transition flex flex-col gap-0.5 ${
-              sel ? 'border-blue-800 bg-blue-50/80 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300'
-            }">
-            <div class="flex items-center justify-between gap-1">
-              <span class="text-xs font-extrabold truncate ${sel ? 'text-blue-950' : 'text-slate-800'}">${escapeHtml(per.nombre)}</span>
-              <div class="flex items-center gap-1 shrink-0">
-                ${btnEliminar}
-                <span class="text-xs font-bold ${sel ? 'text-blue-700' : 'text-slate-300'}">${sel ? '✓' : '○'}</span>
-              </div>
-            </div>
-            <span class="text-[11px] truncate ${sel ? 'text-blue-700 font-medium' : 'text-slate-500'}">${escapeHtml(per.descripcion || '')}</span>
-          </div>
-        `;
-      }).join('');
-
-      const selHeader = document.getElementById('select-periodo-header');
-      selHeader.innerHTML = periodosDisponibles.map(per =>
-        `<option value="${escapeHtml(per.id)}" ${per.id === periodoSeleccionado ? 'selected' : ''}>${escapeHtml(per.nombre)}</option>`
-      ).join('');
-    }
-
-    function seleccionarPeriodoLogin(id) {
-      periodoSeleccionado = id;
-      renderSelectorPeriodosLogin();
-    }
-
-    function cambiarPeriodoDesdeHeader(nuevoPeriodo) {
-      periodoSeleccionado = nuevoPeriodo;
-      seleccionadoId = null;
-      estadoSeleccionadoLocal = null;
-      docActivoKey = 'cv';
-      filtroNivelActivo = '';
-      filtroEstadoActivo = '';
-      document.getElementById('filtro-texto').value = '';
-      cargarDatos(false);
-    }
-
-    // --- Gestión y Búsqueda Compacta de Jurados ---
-    async function cargarListaJuradosServidor() {
-      if (!claveCoordActual && requiereClaveServer) return;
-      try {
-        const query = new URLSearchParams({ action: 'jurados', clave: claveCoordActual });
-        const resp = await fetch(`${API_URL}?${query.toString()}`);
-        const json = await resp.json();
-        if (json && json.ok) {
-          juradosConfig = json.juradosConfig;
-          listaJurados = json.jurados || [];
-          renderChipsJuradosUnif();
-          renderResultadosBusquedaJurados();
-          renderListaJuradosModal();
-        }
-      } catch (e) {}
-    }
-
-    function toggleSeleccionJuradoUnif(idx) {
-      if (juradosSeleccionadosUnif.has(idx)) {
-        juradosSeleccionadosUnif.delete(idx);
-      } else {
-        juradosSeleccionadosUnif.add(idx);
-      }
-      renderChipsJuradosUnif();
-      renderResultadosBusquedaJurados();
-    }
-
-    function limpiarSeleccionJuradosUnif() {
-      juradosSeleccionadosUnif.clear();
-      const inp = document.getElementById('busq-jurado-unif');
-      if (inp) inp.value = '';
-      renderChipsJuradosUnif();
-      renderResultadosBusquedaJurados();
-    }
-
-    function renderChipsJuradosUnif() {
-      const chipsCont = document.getElementById('chips-jurados-unif');
-      if (!chipsCont) return;
-
-      if (juradosSeleccionadosUnif.size === 0) {
-        chipsCont.innerHTML = '<span class="text-[11px] text-slate-400 italic">Ningún jurado seleccionado (si no elige ninguno, se genera enlace genérico)</span>';
-        return;
-      }
-
-      const chipsHtml = [];
-      juradosSeleccionadosUnif.forEach(idx => {
-        const j = listaJurados[idx];
-        if (!j) return;
-        chipsHtml.push(`
-          <span class="inline-flex items-center gap-1.5 bg-blue-900 text-white text-[11px] font-semibold px-2.5 py-0.5 rounded-full shadow-2xs">
-            <span>✓ ${escapeHtml(j.nombre)}</span>
-            <button type="button" onclick="toggleSeleccionJuradoUnif(${idx})" class="hover:text-amber-300 font-bold leading-none">✕</button>
-          </span>
-        `);
-      });
-      chipsCont.innerHTML = chipsHtml.join('');
-    }
-
-    function renderResultadosBusquedaJurados() {
-      const inp = document.getElementById('busq-jurado-unif');
-      const box = document.getElementById('lista-resultados-jurados-unif');
-      if (!inp || !box) return;
-
-      const q = inp.value.toLowerCase().trim();
-      // Mantiene oculto el listado completo cuando el buscador está vacío para no ocupar espacio
-      if (!q) {
-        box.classList.add('hidden');
-        box.innerHTML = '';
-        return;
-      }
-
-      box.classList.remove('hidden');
-
-      if (listaJurados.length === 0) {
-        box.innerHTML = '<div class="p-3 text-[11px] text-slate-400 text-center">No hay jurados vinculados aún. Haga clic en "+ Nómina" para cargar la planilla.</div>';
-        return;
-      }
-
-      const coincidencias = listaJurados
-        .map((j, idx) => ({ j, idx }))
-        .filter(({ j }) =>
-          j.nombre.toLowerCase().includes(q) ||
-          j.dni.toLowerCase().includes(q) ||
-          j.email.toLowerCase().includes(q) ||
-          j.especialidad.toLowerCase().includes(q) ||
-          j.nivel.toLowerCase().includes(q)
-        );
-
-      if (coincidencias.length === 0) {
-        box.innerHTML = '<div class="p-3 text-[11px] text-slate-400 text-center">Sin coincidencias para esa búsqueda.</div>';
-        return;
-      }
-
-      box.innerHTML = coincidencias.map(({ j, idx }) => {
-        const checked = juradosSeleccionadosUnif.has(idx);
-        return `
-          <label class="flex items-start gap-2.5 px-3 py-2 cursor-pointer hover:bg-blue-50/70 transition ${checked ? 'bg-blue-50/90' : ''}">
-            <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleSeleccionJuradoUnif(${idx})"
-              class="mt-0.5 rounded border-slate-300 text-blue-900 focus:ring-blue-600 cursor-pointer" />
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center justify-between gap-1.5">
-                <span class="text-xs font-bold text-slate-800 truncate">${escapeHtml(j.nombre)}</span>
-                ${j.nivel ? `<span class="text-[10px] bg-slate-100 border border-slate-200 px-1.5 rounded text-slate-600 shrink-0">${escapeHtml(j.nivel)}</span>` : ''}
-              </div>
-              <p class="text-[11px] text-slate-500 truncate">
-                ${j.email ? `✉️ ${escapeHtml(j.email)}` : '<span class="text-amber-600">Sin correo cargado</span>'}
-                ${j.especialidad ? ` · ${escapeHtml(j.especialidad)}` : ''}
-              </p>
-            </div>
-          </label>
-        `;
-      }).join('');
-    }
-
-    function cambiarTabAsignacion(tipo) {
-      tabAsignacionActiva = tipo === 'individual' ? 'individual' : 'materia';
-      const btnMat = document.getElementById('tab-asig-materia');
-      const btnInd = document.getElementById('tab-asig-individual');
-      const blkMat = document.getElementById('bloque-asig-materia');
-      const blkInd = document.getElementById('bloque-asig-individual');
-
-      if (tabAsignacionActiva === 'materia') {
-        btnMat.className = 'py-2 px-2 rounded-md transition bg-blue-950 text-white shadow-2xs';
-        btnInd.className = 'py-2 px-2 rounded-md transition text-slate-600 hover:text-slate-900';
-        blkMat.classList.remove('hidden');
-        blkInd.classList.add('hidden');
-      } else {
-        btnInd.className = 'py-2 px-2 rounded-md transition bg-blue-950 text-white shadow-2xs';
-        btnMat.className = 'py-2 px-2 rounded-md transition text-slate-600 hover:text-slate-900';
-        blkInd.classList.remove('hidden');
-        blkMat.classList.add('hidden');
-      }
-      document.getElementById('msg-modal-unif').classList.add('hidden');
-    }
-
-    function abrirModalAsignacionUnificada(tabInicial) {
-      // Poblar selector de materias del modal con las disponibles en la vista actual
-      const selMatModal = document.getElementById('sel-asig-materia');
-      const matActualFiltro = document.getElementById('filtro-materia').value;
-      const baseNivel = filtroNivelActivo
-        ? postulantes.filter(p => p.nivel === filtroNivelActivo)
-        : postulantes;
-
-      const conteo = {};
-      baseNivel.forEach(p => p.materias.forEach(m => { conteo[m] = (conteo[m] || 0) + 1; }));
-      const matsOrdenadas = Object.keys(conteo).sort();
-
-      if (matsOrdenadas.length === 0) {
-        selMatModal.innerHTML = '<option value="">No hay materias cargadas en este llamado</option>';
-      } else {
-        selMatModal.innerHTML = matsOrdenadas.map(m =>
-          `<option value="${escapeHtml(m)}" ${m === matActualFiltro ? 'selected' : ''}>${escapeHtml(m)} (${conteo[m]} inscriptos)</option>`
-        ).join('');
-      }
-
-      // Poblar selector de postulantes individuales
-      const selPostModal = document.getElementById('sel-asig-postulante');
-      if (postulantes.length === 0) {
-        selPostModal.innerHTML = '<option value="">No hay postulantes disponibles</option>';
-      } else {
-        selPostModal.innerHTML = postulantes.map(p =>
-          `<option value="${p.id}" ${p.id === seleccionadoId ? 'selected' : ''}>${escapeHtml(p.nombre)} · DNI ${escapeHtml(p.dni)} (${escapeHtml(p.nivel)})</option>`
-        ).join('');
-      }
-
-      document.getElementById('inp-dias-unif').value = '10';
-      document.getElementById('busq-jurado-unif').value = '';
-      document.getElementById('msg-modal-unif').classList.add('hidden');
-      renderChipsJuradosUnif();
-      renderResultadosBusquedaJurados();
-      cambiarTabAsignacion(tabInicial || 'materia');
-
-      document.getElementById('modal-asignacion-unificada').classList.remove('hidden');
-    }
-
-    function cerrarModalAsignacionUnificada() {
-      document.getElementById('modal-asignacion-unificada').classList.add('hidden');
-    }
-
-    function obtenerArrayJuradosSeleccionadosUnif() {
-      const seleccionados = [];
-      juradosSeleccionadosUnif.forEach(idx => {
-        const j = listaJurados[idx];
-        if (j) {
-          seleccionados.push({ id: j.id, nombre: j.nombre, email: j.email });
-        }
-      });
-      return seleccionados;
-    }
-
-    function formatearTextoEnlacesCopiados(enlaces) {
-      if (!enlaces || enlaces.length === 0) return '';
-      if (enlaces.length === 1) return enlaces[0].enlace;
-      return enlaces.map(item => `${item.juradoNombre}:\n${item.enlace}`).join('\n\n');
-    }
-
-    async function ejecutarAsignacionUnificada(enviarCorreo) {
-      const dias = parseInt(document.getElementById('inp-dias-unif').value, 10) || 10;
-      const juradosElegidos = obtenerArrayJuradosSeleccionadosUnif();
-      const baseUrl = window.location.origin + window.location.pathname;
-
-      const msgEl = document.getElementById('msg-modal-unif');
-      const btnCopiar = document.getElementById('btn-unif-copiar');
-      const btnCorreo = document.getElementById('btn-unif-correo');
-
-      msgEl.classList.add('hidden');
-
-      let datosPayload = null;
-      if (tabAsignacionActiva === 'materia') {
-        const materia = document.getElementById('sel-asig-materia').value;
-        if (!materia) {
-          msgEl.textContent = 'Seleccione una materia o cargo para asignar.';
-          msgEl.className = 'text-xs rounded-lg p-2.5 font-medium bg-red-50 text-red-700 border border-red-200';
-          msgEl.classList.remove('hidden');
-          return;
-        }
-        datosPayload = {
-          tipo: 'materia',
-          periodo: periodoSeleccionado,
-          nivel: filtroNivelActivo || 'TODOS',
-          materia: materia,
-          dias: dias,
-          jurados: juradosElegidos,
-          baseUrl: baseUrl,
-          enviarCorreo: enviarCorreo
-        };
-      } else {
-        const postId = parseInt(document.getElementById('sel-asig-postulante').value, 10);
-        const p = postulantes.find(item => item.id === postId);
-        if (!p) {
-          msgEl.textContent = 'Seleccione un postulante válido.';
-          msgEl.className = 'text-xs rounded-lg p-2.5 font-medium bg-red-50 text-red-700 border border-red-200';
-          msgEl.classList.remove('hidden');
-          return;
-        }
-        datosPayload = {
-          tipo: 'individual',
-          periodo: p.periodo,
-          nivel: p.nivel,
-          rowNumber: p.rowNumber,
-          dni: p.dni,
-          postulanteNombre: p.nombre,
-          dias: dias,
-          jurados: juradosElegidos,
-          baseUrl: baseUrl,
-          enviarCorreo: enviarCorreo
-        };
-      }
-
-      btnCopiar.disabled = true;
-      btnCorreo.disabled = true;
-
-      try {
-        const resp = await fetch(API_URL, {
-          method: 'POST',
-          body: JSON.stringify({
-            action: 'generar_asignacion',
-            datos: datosPayload,
-            auth: { clave: claveCoordActual }
-          })
-        });
-        const json = await resp.json();
-        if (!json.ok) throw new Error(json.error || 'No se pudo generar el enlace.');
-
-        const textoCopiar = formatearTextoEnlacesCopiados(json.enlaces);
-        copiarTextoPortapapeles(textoCopiar, () => {});
-
-        const cant = (json.enlaces || []).length;
-        msgEl.textContent = enviarCorreo
-          ? `✓ ${json.enviadosCount} correo(s) enviado(s) desde Concursos y enlace(s) copiados (vence ${json.expTexto} hs).`
-          : `✓ ${cant > 1 ? cant + ' enlaces personales copiados' : 'Enlace copiado'} al portapapeles (vence ${json.expTexto} hs).`;
-        msgEl.className = 'text-xs rounded-lg p-2.5 font-medium bg-emerald-50 text-emerald-800 border border-emerald-200';
-        msgEl.classList.remove('hidden');
-      } catch (err) {
-        msgEl.textContent = err.message;
-        msgEl.className = 'text-xs rounded-lg p-2.5 font-medium bg-red-50 text-red-700 border border-red-200';
-        msgEl.classList.remove('hidden');
-      } finally {
-        btnCopiar.disabled = false;
-        btnCorreo.disabled = false;
-      }
-    }
-
-    function renderListaJuradosModal() {
-      const estadoLbl = document.getElementById('estado-planilla-jurados');
-      const cntLbl = document.getElementById('cnt-jurados-modal');
-      const cont = document.getElementById('lista-jurados-modal');
-
-      if (juradosConfig && juradosConfig.tituloPlanilla) {
-        estadoLbl.textContent = `✓ Vinculada: ${juradosConfig.tituloPlanilla}`;
-        estadoLbl.className = 'text-[11px] font-bold text-emerald-700';
-      } else {
-        estadoLbl.textContent = 'Sin vincular';
-        estadoLbl.className = 'text-[11px] font-semibold text-slate-500';
-      }
-
-      cntLbl.textContent = `${listaJurados.length} cargados`;
-
-      if (listaJurados.length === 0) {
-        cont.innerHTML = '<div class="p-4 text-center text-slate-400">No hay jurados cargados aún. Pegue el enlace de su planilla arriba.</div>';
-        return;
-      }
-
-      cont.innerHTML = listaJurados.map(j => `
-        <div class="px-3 py-2 flex items-center justify-between gap-2">
-          <div class="min-w-0">
-            <p class="font-bold text-slate-800 truncate">${escapeHtml(j.nombre)} ${j.rol ? `<span class="text-[10px] font-semibold text-blue-700">(${escapeHtml(j.rol)})</span>` : ''}</p>
-            <p class="text-[11px] text-slate-500 truncate">
-              ${j.email ? `✉️ ${escapeHtml(j.email)}` : '<span class="text-amber-600">Sin correo</span>'}
-              ${j.especialidad ? ` · ${escapeHtml(j.especialidad)}` : ''}
-            </p>
-          </div>
-          <div class="text-right shrink-0 text-[10px] text-slate-500">
-            ${j.nivel ? `<span class="bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded font-semibold">${escapeHtml(j.nivel)}</span>` : ''}
-          </div>
-        </div>
-      `).join('');
-    }
-
-    function abrirModalJurados() {
-      document.getElementById('msg-modal-jurados').classList.add('hidden');
-      renderListaJuradosModal();
-      document.getElementById('modal-jurados').classList.remove('hidden');
-      cargarListaJuradosServidor();
-    }
-
-    function cerrarModalJurados() {
-      document.getElementById('modal-jurados').classList.add('hidden');
-    }
-
-    async function vincularPlanillaJurados() {
-      const url = document.getElementById('inp-url-jurados').value.trim();
-      const msg = document.getElementById('msg-modal-jurados');
-      msg.classList.add('hidden');
-
-      if (!url) {
-        msg.textContent = 'Pegue el enlace de Google Sheets de su base de jurados.';
-        msg.className = 'text-xs rounded-lg p-2.5 font-medium bg-red-50 text-red-700 border border-red-200';
-        msg.classList.remove('hidden');
-        return;
-      }
-
-      const btn = document.getElementById('btn-vincular-jurados');
-      btn.disabled = true;
-      btn.textContent = 'Vinculando...';
-
-      try {
-        const resp = await fetch(API_URL, {
-          method: 'POST',
-          body: JSON.stringify({
-            action: 'configurar_jurados',
-            urlPlanilla: url,
-            auth: { clave: claveCoordActual }
-          })
-        });
+        colFicha.className = `${vista === 'ficha' ? 'flex' : 'hidden'} lg:flex lg:col-span-4 bg-white border-r border-slate-200 flex-col lg:h-full
