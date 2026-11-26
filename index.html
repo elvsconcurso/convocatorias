@@ -578,6 +578,97 @@
         </a>
       `;
     }
+    async function inicializar() {
+      configurarInterfazSegunModo();
+
+      if (API_URL.startsWith('PEGAR_AQUI') || !API_URL.startsWith('https://')) {
+        document.getElementById('pantalla-carga').innerHTML =
+          '<div class="text-center p-5 max-w-md bg-white rounded-xl border border-red-200 shadow-sm">' +
+          '<p class="text-red-600 text-sm font-bold">Falta configurar API_URL en index.html</p>' +
+          '<p class="text-xs text-slate-600 mt-1">Pegue la URL terminada en /exec de Google Apps Script.</p>' +
+          '</div>';
+        return;
+      }
+
+      if (MODO_INDIVIDUAL || MODO_MATERIA) {
+        cargarDatos(false);
+        return;
+      }
+
+      // Mostrar de inmediato la pantalla de acceso con convocatoria por defecto
+      // mientras se sincroniza la lista actualizada de períodos en segundo plano
+      if (!claveCoordActual) {
+        periodosDisponibles = [
+          { id: periodoSeleccionado || '2026', nombre: 'Convocatoria 2026', descripcion: 'Período Activo', esBase: true }
+        ];
+        renderSelectorPeriodosLogin();
+        document.getElementById('pantalla-carga').classList.add('hidden');
+        document.getElementById('pantalla-login').classList.remove('hidden');
+        document.getElementById('subtitulo-convocatoria').textContent = 'Sincronizando convocatorias disponibles...';
+      }
+
+      const avisoLento = setTimeout(() => {
+        const txt = document.getElementById('texto-carga');
+        if (txt) {
+          txt.textContent = 'Despertando servidor de Google Apps Script (primera carga tras actualización)...';
+        }
+      }, 4000);
+
+      try {
+        const cacheBuster = Date.now();
+        const resp = await fetchConTimeout(`${API_URL}?action=config&_ts=${cacheBuster}`, { cache: 'no-store' }, 45000);
+        clearTimeout(avisoLento);
+
+        const textoResp = await resp.text();
+        let cfg;
+        try {
+          cfg = JSON.parse(textoResp);
+        } catch (parseErr) {
+          throw new Error('Google Apps Script no devolvió datos válidos. Verifique que "Quién tiene acceso" esté configurado en "Cualquier usuario".');
+        }
+
+        periodosDisponibles = (cfg && cfg.periodos && cfg.periodos.length > 0)
+          ? cfg.periodos
+          : [{ id: '2026', nombre: 'Convocatoria 2026', descripcion: 'Período Activo', esBase: true }];
+        requiereClaveServer = Boolean(cfg && cfg.requiereClave);
+        juradosConfig = cfg ? cfg.juradosConfig : null;
+
+        if (!periodosDisponibles.some(p => p.id === periodoSeleccionado)) {
+          periodoSeleccionado = periodosDisponibles[0].id;
+        }
+
+        renderSelectorPeriodosLogin();
+
+        if (!requiereClaveServer) {
+          document.getElementById('bloque-clave-login').classList.add('hidden');
+        }
+
+        if (requiereClaveServer && !claveCoordActual) {
+          document.getElementById('pantalla-carga').classList.add('hidden');
+          document.getElementById('pantalla-login').classList.remove('hidden');
+          document.getElementById('subtitulo-convocatoria').textContent = 'Seleccione o cree un apartado de inscripción';
+          return;
+        }
+      } catch (e) {
+        clearTimeout(avisoLento);
+        if (!claveCoordActual) {
+          document.getElementById('subtitulo-convocatoria').textContent = 'Listo para ingresar (sin conexión previa)';
+          return;
+        }
+        const detalle = e.name === 'AbortError'
+          ? 'El servidor de Google tardó más de 45s en despertar tras la actualización. Presioná Reintentar.'
+          : (e.message || 'Error de red o permisos en Apps Script.');
+        document.getElementById('pantalla-carga').innerHTML =
+          `<div class="text-center p-6 max-w-md bg-white rounded-xl border border-red-200 shadow-sm space-y-2">
+            <p class="text-red-600 text-sm font-bold">No se pudo conectar con Google Apps Script</p>
+            <p class="text-xs text-slate-600">${escapeHtml(detalle)}</p>
+            <button onclick="location.reload()" class="mt-2 px-3.5 py-1.5 bg-blue-900 text-white text-xs font-bold rounded">Reintentar</button>
+          </div>`;
+        return;
+      }
+
+      cargarDatos(false);
+    }
 
     async function fetchConTimeout(url, options, timeoutMs) {
       const controller = new AbortController();
